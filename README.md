@@ -40,6 +40,28 @@ values (
 );
 ```
 
+## Phase 3 — Admin core ✅
+
+- [x] Admin overview (`/admin`) with pending/upcoming/roster stat cards
+- [x] Player approval queue (`/admin/players`) — approve/reject pending
+      signups, plus a read-only roster list
+- [x] Session create/edit (`/admin/sessions`, `/admin/sessions/new`,
+      `/admin/sessions/[id]/edit`) — the SQL workaround above is no longer
+      needed, sessions can be created from the UI now
+- [x] Quick actions to mark a session completed or cancelled (and reopen it)
+- [x] Fixed a latent bug from Phase 2: session times were being formatted in
+      whatever timezone the server happens to run in. All date/time display
+      and input now pins to Africa/Dar_es_Salaam explicitly
+      (`lib/format.ts`), so it's correct on Vercel (which defaults to UTC)
+      without needing a timezone picker
+
+**Promoting a second admin** is still done via SQL (there's no UI for
+changing roles yet — kept out of scope to avoid an admin accidentally
+locking themselves out):
+```sql
+update public.players set role = 'admin' where email = 'someone@example.com';
+```
+
 ## Setup
 
 1. **Create a Supabase project** at [supabase.com](https://supabase.com).
@@ -72,14 +94,20 @@ app/
   dashboard/               player dashboard (profile, stats, my RSVPs)
   sessions/                sessions list + RSVP/waitlist
   leaderboard/              live standings
-  admin/                    admin shell (Phase 3)
+  admin/                    admin overview
+  admin/players/             approval queue + roster
+  admin/sessions/             session list + quick actions
+  admin/sessions/new/          create session
+  admin/sessions/[id]/edit/     edit session
 lib/
   supabase/client.ts       browser Supabase client
   supabase/server.ts       server Supabase client
   supabase/middleware.ts   session refresh + route protection
   actions/rsvp.ts           RSVP / cancel server actions
   actions/profile.ts        profile update server action
-  format.ts                  date/time formatting helpers
+  actions/admin-players.ts   approve/reject server actions
+  actions/admin-sessions.ts  create/update/status server actions
+  format.ts                  date/time helpers, pinned to Africa/Dar_es_Salaam
   types.ts                 shared TS types mirroring the schema
 components/
   nav.tsx / nav-bar.tsx     responsive nav
@@ -91,6 +119,10 @@ components/
   page-header.tsx           interior page header
   empty-state.tsx            shared empty-state block
   logo-mark.tsx              paddle + ball glyph
+  admin/admin-tabs.tsx        Overview/Players/Sessions sub-nav
+  admin/player-approval-row.tsx
+  admin/session-form.tsx        shared create/edit form
+  admin/session-quick-actions.tsx
 supabase/
   schema.sql                 tables, trigger, RLS foundation
   phase2_sessions_rsvp.sql    sessions/rsvps RLS + RSVP RPC functions
@@ -102,11 +134,12 @@ Defined in `app/globals.css`. Palette pulls from the sport itself rather
 than a generic app palette: deep court green (`--color-court`), optic-yellow
 ball (`--color-ball`, used sparingly), warm paper background, and a dashed
 "kitchen line" rule (`.kitchen-line`) used as the one recurring structural
-motif — nav bottom border, table headers, section dividers.
+motif — nav bottom border, table headers, section dividers. Fonts (Big
+Shoulders Display / Inter / JetBrains Mono) are self-hosted via Fontsource
+rather than fetched from Google at build time — see the note in Phase 3.
 
 ## Next phases
 
-- **Phase 3** — admin player approval queue, session create/edit UI
 - **Phase 4** — match submission + verification, leaderboard scoring rules
 - **Phase 5** — payment tracking UI, attendance log
 - **Phase 6** — community feed, notifications, polish pass

@@ -1,0 +1,61 @@
+import { notFound, redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import { PageHeader } from "@/components/page-header";
+import { AdminTabs } from "@/components/admin/admin-tabs";
+import { SessionForm } from "@/components/admin/session-form";
+import { updateSession } from "@/lib/actions/admin-sessions";
+import { toDarDateInputValue, toDarTimeInputValue } from "@/lib/format";
+
+export default async function EditSessionPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) redirect("/login");
+
+  const { data: me } = await supabase
+    .from("players")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  if (me?.role !== "admin") redirect("/dashboard");
+
+  const { data: session } = await supabase
+    .from("sessions")
+    .select("id, title, date_time, location, capacity")
+    .eq("id", id)
+    .single();
+
+  if (!session) notFound();
+
+  const boundUpdate = updateSession.bind(null, session.id);
+
+  return (
+    <div>
+      <PageHeader eyebrow="Admin" title="Edit session" />
+      <div className="mx-auto mt-8 max-w-6xl px-6 pb-16">
+        <AdminTabs active="/admin/sessions" />
+        <div className="mt-6 max-w-lg rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-paper-raised)] p-6">
+          <SessionForm
+            action={boundUpdate}
+            submitLabel="Save changes"
+            defaultValues={{
+              title: session.title,
+              date: toDarDateInputValue(session.date_time),
+              time: toDarTimeInputValue(session.date_time),
+              location: session.location,
+              capacity: session.capacity,
+            }}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -1,6 +1,8 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/page-header";
+import { AdminTabs } from "@/components/admin/admin-tabs";
 
 export default async function AdminPage() {
   const supabase = await createClient();
@@ -18,28 +20,47 @@ export default async function AdminPage() {
 
   if (player?.role !== "admin") redirect("/dashboard");
 
-  const { count: pendingCount } = await supabase
-    .from("players")
-    .select("id", { count: "exact", head: true })
-    .eq("status", "pending");
+  const [{ count: pendingCount }, { count: upcomingCount }, { count: rosterCount }] =
+    await Promise.all([
+      supabase.from("players").select("id", { count: "exact", head: true }).eq("status", "pending"),
+      supabase.from("sessions").select("id", { count: "exact", head: true }).eq("status", "upcoming"),
+      supabase.from("players").select("id", { count: "exact", head: true }).eq("status", "approved"),
+    ]);
 
   return (
     <div>
-      <PageHeader
-        eyebrow="Admin"
-        title="Club control room"
-        subtitle="Player approvals, session management, and payment tracking arrive in Phase 3."
-      />
+      <PageHeader eyebrow="Admin" title="Club control room" />
       <div className="mx-auto mt-8 max-w-6xl px-6 pb-16">
-        <div className="rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-paper-raised)] p-6">
-          <p className="text-xs uppercase tracking-widest text-[var(--color-ink-muted)]">
-            Pending approvals
-          </p>
-          <p className="mt-1 font-[family-name:var(--font-mono)] text-4xl font-semibold text-[var(--color-ink)]">
-            {pendingCount ?? 0}
-          </p>
+        <AdminTabs active="/admin" />
+
+        <div className="mt-6 grid gap-4 md:grid-cols-3">
+          <StatCard
+            label="Pending approvals"
+            value={pendingCount ?? 0}
+            href="/admin/players"
+          />
+          <StatCard
+            label="Upcoming sessions"
+            value={upcomingCount ?? 0}
+            href="/admin/sessions"
+          />
+          <StatCard label="Approved players" value={rosterCount ?? 0} href="/admin/players" />
         </div>
       </div>
     </div>
+  );
+}
+
+function StatCard({ label, value, href }: { label: string; value: number; href: string }) {
+  return (
+    <Link
+      href={href}
+      className="block rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-paper-raised)] p-6 transition-colors hover:border-[var(--color-court)]"
+    >
+      <p className="text-xs uppercase tracking-widest text-[var(--color-ink-muted)]">{label}</p>
+      <p className="mt-1 font-[family-name:var(--font-mono)] text-4xl font-semibold text-[var(--color-ink)]">
+        {value}
+      </p>
+    </Link>
   );
 }
