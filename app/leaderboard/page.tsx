@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/page-header";
+import { EmptyState } from "@/components/empty-state";
 
 export default async function LeaderboardPage() {
   const supabase = await createClient();
@@ -18,11 +19,7 @@ export default async function LeaderboardPage() {
       />
       <div className="mx-auto mt-8 max-w-6xl px-6 pb-16">
         {!players || players.length === 0 ? (
-          <div className="kitchen-line rounded-[var(--radius-card)] border border-dashed border-[var(--color-line)] bg-[var(--color-paper-raised)] p-10 text-center">
-            <p className="text-[var(--color-ink-muted)]">
-              No approved players yet.
-            </p>
-          </div>
+          <EmptyState message="No approved players yet." />
         ) : (
           <div className="overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-paper-raised)]">
             <table className="w-full text-left">

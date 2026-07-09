@@ -10,17 +10,41 @@ Next.js (App Router) + Supabase + Tailwind CSS v4. Built in phases — see
       a `role` column on `players` (needed for admin gating, not in the
       original table list) and an auto-provision trigger so every signup
       gets a `pending` player row
-- [x] Auth: email/password sign up + sign in, session refresh via middleware,
-      route protection for `/dashboard`, `/sessions`, `/leaderboard`, `/admin`
+- [x] Auth: email/password sign up + sign in, session refresh via `proxy.ts`
+      (Next.js 16 renamed `middleware.ts`), route protection for
+      `/dashboard`, `/sessions`, `/leaderboard`, `/admin`
 - [x] Responsive layout + nav (desktop bar, mobile menu), landing page
 - [x] Placeholder Dashboard / Sessions / Leaderboard / Admin pages wired to
       real auth state (leaderboard already reads live `players` data)
 
+## Phase 2 — Player-facing core ✅
+
+- [x] Editable player profile (name, phone, skill tier) on the dashboard
+- [x] Real sessions list, pulled from `sessions`
+- [x] RSVP / cancel, with capacity + waitlist + auto-promote logic owned by
+      two Postgres RPC functions (`rsvp_to_session`, `cancel_rsvp`) so it's
+      safe under concurrent requests — see `supabase/phase2_sessions_rsvp.sql`
+- [x] Dashboard shows the sessions a player has RSVP'd to (confirmed or
+      waitlisted), with a match-history placeholder for Phase 4
+
+**Note:** the admin UI for creating/editing sessions is Phase 3. To test the
+RSVP flow now, add a session directly in the Supabase SQL editor:
+```sql
+insert into public.sessions (title, date_time, location, capacity, created_by)
+values (
+  'Saturday Open Play',
+  now() + interval '3 days',
+  'Oyster Bay Courts',
+  12,
+  (select id from public.players where role = 'admin' limit 1)
+);
+```
+
 ## Setup
 
 1. **Create a Supabase project** at [supabase.com](https://supabase.com).
-2. **Run the schema.** Open the SQL editor in your Supabase project and run
-   the contents of `supabase/schema.sql`.
+2. **Run the schema.** Open the SQL editor in your Supabase project and run,
+   in order: `supabase/schema.sql`, then `supabase/phase2_sessions_rsvp.sql`.
 3. **Env vars.** Copy `.env.local.example` to `.env.local` and fill in your
    project's URL + anon key (Project Settings → API).
 4. **Install & run:**
@@ -45,22 +69,31 @@ app/
   (auth)/login/           sign in
   (auth)/signup/          sign up
   auth/callback/route.ts  email confirmation exchange
-  dashboard/               player dashboard
-  sessions/                sessions list (Phase 2)
+  dashboard/               player dashboard (profile, stats, my RSVPs)
+  sessions/                sessions list + RSVP/waitlist
   leaderboard/              live standings
   admin/                    admin shell (Phase 3)
 lib/
   supabase/client.ts       browser Supabase client
   supabase/server.ts       server Supabase client
   supabase/middleware.ts   session refresh + route protection
+  actions/rsvp.ts           RSVP / cancel server actions
+  actions/profile.ts        profile update server action
+  format.ts                  date/time formatting helpers
   types.ts                 shared TS types mirroring the schema
 components/
   nav.tsx / nav-bar.tsx     responsive nav
   auth-card.tsx             shared auth form shell
+  form-field.tsx             shared text input
+  profile-form.tsx           editable profile form
+  session-card.tsx            session card w/ RSVP button
+  rsvp-button.tsx              RSVP/cancel/waitlist button
   page-header.tsx           interior page header
+  empty-state.tsx            shared empty-state block
   logo-mark.tsx              paddle + ball glyph
 supabase/
-  schema.sql                tables, trigger, RLS
+  schema.sql                 tables, trigger, RLS foundation
+  phase2_sessions_rsvp.sql    sessions/rsvps RLS + RSVP RPC functions
 ```
 
 ## Design tokens
@@ -73,9 +106,7 @@ motif — nav bottom border, table headers, section dividers.
 
 ## Next phases
 
-- **Phase 2** — signup → pending approval flow is done; still need player
-  profile editing, real session list + RSVP/waitlist logic
-- **Phase 3** — admin player approval queue, session create/edit
+- **Phase 3** — admin player approval queue, session create/edit UI
 - **Phase 4** — match submission + verification, leaderboard scoring rules
 - **Phase 5** — payment tracking UI, attendance log
 - **Phase 6** — community feed, notifications, polish pass
