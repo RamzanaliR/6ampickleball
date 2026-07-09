@@ -22,9 +22,9 @@
   --radius-input: 12px;
   --radius-pill: 999px;
 
-  --font-display: var(--font-big-shoulders), sans-serif;
-  --font-body: var(--font-inter), sans-serif;
-  --font-mono: var(--font-jetbrains-mono), monospace;
+  --font-display: "Big Shoulders Display Variable", sans-serif;
+  --font-body: "Inter Variable", sans-serif;
+  --font-mono: "JetBrains Mono Variable", monospace;
 }
 
 @theme inline {
