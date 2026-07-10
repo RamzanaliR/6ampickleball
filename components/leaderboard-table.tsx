@@ -34,8 +34,8 @@ export function LeaderboardTable({ players }: { players: LeaderboardPlayer[] }) 
         </select>
       </div>
 
-      <div className="overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-paper-raised)]">
-        <table className="w-full text-left">
+      <div className="overflow-x-auto rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-paper-raised)]">
+        <table className="w-full min-w-[480px] text-left">
           <thead>
             <tr className="kitchen-line font-[family-name:var(--font-mono)] text-xs uppercase tracking-widest text-[var(--color-ink-muted)]">
               <th className="px-6 py-3">#</th>

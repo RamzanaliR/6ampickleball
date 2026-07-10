@@ -108,12 +108,39 @@ accidentally left wide open while unfinished. `supabase/phase5_payments_attendan
 adds the missing policies and a `created_at` column on `payments` (needed
 to sort history — the id is a uuid, not a timestamp).
 
+## Phase 6 — Community feed + polish ✅
+
+This is the last phase in the original spec. The app now covers every
+feature in `pickleball-community-app-spec.md`.
+
+- [x] Community feed (`/feed`) — read-only for players, newest first
+- [x] Admin feed management (`/admin/feed`) — post an announcement (text +
+      optional image URL) and delete posts
+- [x] Responsive pass — fixed one real bug (the leaderboard table would clip
+      instead of scroll on narrow phones; now scrolls horizontally) and
+      made grid layouts explicit about their mobile column count instead of
+      relying on implicit browser behavior
+
+**Notifications were intentionally left out**, per the spec's own call:
+*"Notifications (build later if time allows)... can defer to v2."* Session
+reminders and RSVP confirmations over WhatsApp are a real integration
+project on their own (a WhatsApp Business API account, message templates,
+a delivery pipeline) — bolting on a half-working version would cost more
+in false confidence than it's worth. This is the natural v2 starting point.
+
+**Feed images are a URL field, not a file upload.** Building real upload
+(Supabase Storage bucket, upload UI, image processing) is a meaningful
+chunk of work on its own; a URL field gets the same "post a photo" outcome
+today; wiring up Storage is a clean, isolated upgrade later without
+touching anything else.
+
 ## Setup
 
 1. **Create a Supabase project** at [supabase.com](https://supabase.com).
 2. **Run the schema.** Open the SQL editor in your Supabase project and run,
    in order: `supabase/schema.sql`, `supabase/phase2_sessions_rsvp.sql`,
-   `supabase/phase4_matches.sql`, then `supabase/phase5_payments_attendance.sql`.
+   `supabase/phase4_matches.sql`, `supabase/phase5_payments_attendance.sql`,
+   then `supabase/phase6_feed.sql`.
 3. **Env vars.** Copy `.env.local.example` to `.env.local` and fill in your
    project's URL + anon key (Project Settings → API).
 4. **Install & run:**
@@ -142,6 +169,7 @@ app/
   sessions/                sessions list + RSVP/waitlist
   sessions/[id]/log-match/  submit a match result
   leaderboard/              live standings + tier filter
+  feed/                     read-only club announcements
   admin/                    admin overview
   admin/players/             approval queue + roster
   admin/sessions/             session list + quick actions
@@ -151,6 +179,7 @@ app/
   admin/matches/               match verification queue
   admin/payments/               payments list + filters
   admin/payments/new/            add a charge
+  admin/feed/                    post/delete announcements
 lib/
   supabase/client.ts       browser Supabase client
   supabase/server.ts       server Supabase client
@@ -162,6 +191,7 @@ lib/
   actions/matches.ts          submit/verify/reject server actions
   actions/attendance.ts        toggle attendance server action
   actions/payments.ts           create charge / toggle paid server actions
+  actions/feed.ts                post/delete announcement server actions
   format.ts                  date/time + TZS currency helpers
   types.ts                 shared TS types mirroring the schema
 components/
@@ -176,7 +206,7 @@ components/
   page-header.tsx           interior page header
   empty-state.tsx            shared empty-state block
   logo-mark.tsx              paddle + ball glyph
-  admin/admin-tabs.tsx        Overview/Players/Sessions/Matches/Payments sub-nav
+  admin/admin-tabs.tsx        Overview/Players/Sessions/Matches/Payments/Feed sub-nav
   admin/player-approval-row.tsx
   admin/session-form.tsx        shared create/edit form
   admin/session-quick-actions.tsx
@@ -184,11 +214,14 @@ components/
   admin/attendance-checkbox.tsx
   admin/payment-form.tsx
   admin/payment-status-toggle.tsx
+  admin/feed-post-form.tsx
+  admin/feed-post-row.tsx
 supabase/
   schema.sql                 tables, trigger, RLS foundation
   phase2_sessions_rsvp.sql    sessions/rsvps RLS + RSVP RPC functions
   phase4_matches.sql           team-based matches table + verify/reject RPCs
   phase5_payments_attendance.sql  payments/attendance RLS + created_at
+  phase6_feed.sql                  community_feed RLS
 ```
 
 ## Design tokens
@@ -201,7 +234,14 @@ motif — nav bottom border, table headers, section dividers. Fonts (Big
 Shoulders Display / Inter / JetBrains Mono) are self-hosted via Fontsource
 rather than fetched from Google at build time — see the note in Phase 3.
 
-## Next phases
+## Status
 
-- **Phase 6** — community feed, notifications, polish pass (last phase in
-  the original spec)
+All 6 phases from the original spec are built. Natural next steps if you
+want to keep going (not in the original spec, just ideas):
+- Real mobile money integration (Selcom/Flutterwave/DPO) — the `payments`
+  table's `method` column was designed for this from Phase 1
+- WhatsApp notifications for session reminders / RSVP confirmations
+- Supabase Storage for feed images and player profile photos, instead of
+  URL fields
+- A role-management UI for promoting a second admin (currently SQL-only,
+  see Phase 3)

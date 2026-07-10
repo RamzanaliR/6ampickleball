@@ -6,6 +6,7 @@ const tabs = [
   { href: "/admin/sessions", label: "Sessions" },
   { href: "/admin/matches", label: "Matches" },
   { href: "/admin/payments", label: "Payments" },
+  { href: "/admin/feed", label: "Feed" },
 ];
 
 export function AdminTabs({ active }: { active: string }) {

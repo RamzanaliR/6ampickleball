@@ -15,6 +15,7 @@ type NavUser = {
 const baseLinks = [
   { href: "/sessions", label: "Sessions" },
   { href: "/leaderboard", label: "Leaderboard" },
+  { href: "/feed", label: "Feed" },
 ];
 
 export function NavBar({ user }: { user: NavUser }) {
