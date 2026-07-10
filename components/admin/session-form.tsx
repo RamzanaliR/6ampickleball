@@ -20,6 +20,8 @@ export function SessionForm({
     location: string;
     capacity: number;
     courts: number | null;
+    countsTowardLeaderboard: boolean;
+    duprEligible: boolean;
   };
   submitLabel: string;
 }) {
@@ -74,6 +76,39 @@ export function SessionForm({
           defaultValue={defaultValues?.courts ?? undefined}
           placeholder="e.g. 4"
         />
+      </div>
+
+      <div className="space-y-2 rounded-[var(--radius-input)] border border-[var(--color-line)] p-4">
+        <label className="flex items-start gap-2.5">
+          <input
+            type="checkbox"
+            name="counts_toward_leaderboard"
+            defaultChecked={defaultValues?.countsTowardLeaderboard ?? true}
+            className="mt-0.5 h-4 w-4 accent-[var(--color-court)]"
+          />
+          <span className="text-sm text-[var(--color-ink)]">
+            Add to leaderboard
+            <span className="block text-xs text-[var(--color-ink-muted)]">
+              Uncheck for a session that shouldn&apos;t count toward the season leaderboard
+              (e.g. a tournament). Players will see this on the session.
+            </span>
+          </span>
+        </label>
+        <label className="flex items-start gap-2.5">
+          <input
+            type="checkbox"
+            name="dupr_eligible"
+            defaultChecked={defaultValues?.duprEligible ?? false}
+            className="mt-0.5 h-4 w-4 accent-[var(--color-court)]"
+          />
+          <span className="text-sm text-[var(--color-ink)]">
+            DUPR session
+            <span className="block text-xs text-[var(--color-ink-muted)]">
+              Flags this session as one whose results should be reported to DUPR
+              manually — no automatic submission yet.
+            </span>
+          </span>
+        </label>
       </div>
 
       {state.error && (

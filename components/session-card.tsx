@@ -15,6 +15,7 @@ export function SessionCard({
     date_time: string;
     location: string;
     capacity: number;
+    counts_toward_leaderboard: boolean;
   };
   spotsLeft: number;
   myStatus: RsvpState;
@@ -32,6 +33,11 @@ export function SessionCard({
             {session.title}
           </h3>
           <p className="mt-1 text-sm text-[var(--color-ink-muted)]">{session.location}</p>
+          {!session.counts_toward_leaderboard && (
+            <p className="mt-1 text-xs text-[var(--color-ink-muted)]">
+              Doesn&apos;t count toward the season leaderboard
+            </p>
+          )}
         </div>
         {myStatus !== "none" && (
           <span

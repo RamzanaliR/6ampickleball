@@ -29,7 +29,7 @@ export default async function EditSessionPage({
 
   const { data: session } = await supabase
     .from("sessions")
-    .select("id, title, date_time, location, capacity, courts")
+    .select("id, title, date_time, location, capacity, courts, counts_toward_leaderboard, dupr_eligible")
     .eq("id", id)
     .single();
 
@@ -53,6 +53,8 @@ export default async function EditSessionPage({
               location: session.location,
               capacity: session.capacity,
               courts: session.courts,
+              countsTowardLeaderboard: session.counts_toward_leaderboard,
+              duprEligible: session.dupr_eligible,
             }}
           />
         </div>

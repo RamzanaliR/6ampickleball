@@ -21,6 +21,7 @@ export async function updateProfile(
   const name = String(formData.get("name") ?? "").trim();
   const phone = String(formData.get("phone") ?? "").trim();
   const skillTier = String(formData.get("skill_tier") ?? "");
+  const duprId = String(formData.get("dupr_id") ?? "").trim();
 
   if (!name) return { error: "Name is required" };
 
@@ -30,6 +31,7 @@ export async function updateProfile(
       name,
       phone: phone || null,
       skill_tier: SKILL_TIERS.includes(skillTier) ? skillTier : null,
+      dupr_id: duprId || null,
     })
     .eq("id", user.id);
 

@@ -1,7 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/page-header";
-import { EmptyState } from "@/components/empty-state";
+import { MatchHistoryList } from "@/components/match-history-list";
 import { formatSessionDate } from "@/lib/format";
 import type { MatchSet } from "@/lib/types";
 
@@ -20,7 +20,7 @@ export default async function PlayerProfilePage({
 
   const { data: player } = await supabase
     .from("players")
-    .select("id, name, skill_tier, points, wins, losses, status, is_guest")
+    .select("id, name, skill_tier, dupr_id, points, wins, losses, status, is_guest")
     .eq("id", id)
     .single();
 
@@ -59,9 +59,12 @@ export default async function PlayerProfilePage({
           <StatCard label="Losses" value={player.losses} />
           <StatCard label="Games" value={player.wins + player.losses} />
         </div>
-        {player.skill_tier && (
-          <p className="mt-4 text-sm capitalize text-[var(--color-ink-muted)]">
-            {player.skill_tier} tier
+        {(player.skill_tier || player.dupr_id) && (
+          <p className="mt-4 flex gap-4 text-sm text-[var(--color-ink-muted)]">
+            {player.skill_tier && <span className="capitalize">{player.skill_tier} tier</span>}
+            {player.dupr_id && (
+              <span className="font-[family-name:var(--font-mono)]">DUPR {player.dupr_id}</span>
+            )}
           </p>
         )}
 
@@ -70,52 +73,32 @@ export default async function PlayerProfilePage({
             Match history
           </h2>
           <div className="mt-4">
-            {!matches || matches.length === 0 ? (
-              <EmptyState message="No matches recorded yet." />
-            ) : (
-              <div className="overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-paper-raised)]">
-                {matches.map((m, i) => {
-                  const onTeamA = m.team_a.includes(id);
-                  const opponentIds = onTeamA ? m.team_b : m.team_a;
-                  const opponentNames =
-                    opponentIds
-                      .map((pid: string) => nameById.get(pid) ?? "Unknown")
-                      .join(" & ") || "Unknown";
-                  const session = sessionById.get(m.session_id);
-                  const setsLabel = (m.sets as MatchSet[])
-                    .map((s) => (onTeamA ? `${s.a}-${s.b}` : `${s.b}-${s.a}`))
-                    .join(", ");
-                  const won =
-                    (onTeamA && m.winning_team === "a") || (!onTeamA && m.winning_team === "b");
+            <MatchHistoryList
+              items={(matches ?? []).map((m) => {
+                const onTeamA = m.team_a.includes(id);
+                const opponentIds = onTeamA ? m.team_b : m.team_a;
+                const opponentLabel =
+                  opponentIds.map((pid: string) => nameById.get(pid) ?? "Unknown").join(" & ") ||
+                  "Unknown";
+                const session = sessionById.get(m.session_id);
+                const setsLabel = (m.sets as MatchSet[])
+                  .map((s) => (onTeamA ? `${s.a}-${s.b}` : `${s.b}-${s.a}`))
+                  .join(", ");
+                const won =
+                  (onTeamA && m.winning_team === "a") || (!onTeamA && m.winning_team === "b");
 
-                  return (
-                    <div
-                      key={m.id}
-                      className={`flex items-center justify-between px-5 py-4 ${
-                        i !== matches.length - 1 ? "kitchen-line" : ""
-                      }`}
-                    >
-                      <div>
-                        <p className="font-medium text-[var(--color-ink)]">vs {opponentNames}</p>
-                        <p className="font-[family-name:var(--font-mono)] text-sm text-[var(--color-ink-muted)]">
-                          {setsLabel}
-                          {session ? ` · ${formatSessionDate(session.date_time)}` : ""}
-                        </p>
-                      </div>
-                      <span
-                        className={
-                          won
-                            ? "shrink-0 rounded-[var(--radius-pill)] bg-[var(--color-court)] px-3 py-1 text-xs font-semibold text-white"
-                            : "shrink-0 rounded-[var(--radius-pill)] border border-[var(--color-line)] px-3 py-1 text-xs font-semibold text-[var(--color-ink-muted)]"
-                        }
-                      >
-                        {won ? "Win" : "Loss"}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+                return {
+                  id: m.id,
+                  opponentLabel,
+                  setsLabel,
+                  sessionId: session?.id ?? null,
+                  sessionLabel: session ? formatSessionDate(session.date_time) : null,
+                  sessionDateTime: session?.date_time ?? null,
+                  outcome: won ? "win" : "loss",
+                };
+              })}
+              emptyMessage="No matches recorded yet."
+            />
           </div>
         </section>
       </div>

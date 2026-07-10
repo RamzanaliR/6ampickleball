@@ -62,6 +62,12 @@ export async function submitMatch(
   }
   const winningTeam = setsWonByA > setsWonByB ? "a" : "b";
 
+  const { data: sessionRow } = await supabase
+    .from("sessions")
+    .select("counts_toward_leaderboard")
+    .eq("id", sessionId)
+    .single();
+
   const { error } = await supabase.from("matches").insert({
     session_id: sessionId,
     team_a: teamA,
@@ -69,6 +75,7 @@ export async function submitMatch(
     sets,
     winning_team: winningTeam,
     submitted_by: user.id,
+    counts_toward_leaderboard: sessionRow?.counts_toward_leaderboard ?? true,
   });
 
   if (error) {

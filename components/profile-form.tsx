@@ -11,10 +11,12 @@ export function ProfileForm({
   name,
   phone,
   skillTier,
+  duprId,
 }: {
   name: string;
   phone: string | null;
   skillTier: string | null;
+  duprId: string | null;
 }) {
   const [state, formAction] = useActionState(updateProfile, initialState);
 
@@ -41,6 +43,12 @@ export function ProfileForm({
           <option value="advanced">Advanced</option>
         </select>
       </label>
+      <FormField
+        label="DUPR ID"
+        name="dupr_id"
+        defaultValue={duprId ?? ""}
+        placeholder="If you have one"
+      />
 
       {state.error && (
         <p className="rounded-[var(--radius-input)] bg-[var(--color-danger-bg)] px-3 py-2 text-sm text-[var(--color-danger)]">

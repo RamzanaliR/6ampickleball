@@ -9,6 +9,7 @@ export default function SignupPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [duprId, setDuprId] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -23,7 +24,7 @@ export default function SignupPage() {
       email,
       password,
       options: {
-        data: { name },
+        data: { name, dupr_id: duprId || undefined },
         emailRedirectTo: `${window.location.origin}/auth/callback`,
       },
     });
@@ -77,6 +78,13 @@ export default function SignupPage() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           autoComplete="new-password"
+        />
+        <FormField
+          label="DUPR ID (optional)"
+          type="text"
+          value={duprId}
+          onChange={(e) => setDuprId(e.target.value)}
+          placeholder="If you have one"
         />
         {error && (
           <p className="rounded-[var(--radius-input)] bg-[var(--color-danger-bg)] px-3 py-2 text-sm text-[var(--color-danger)]">

@@ -14,6 +14,7 @@ export interface Player {
   status: PlayerStatus;
   role: PlayerRole;
   is_guest: boolean;
+  dupr_id: string | null;
   profile_photo_url: string | null;
   created_at: string;
 }
@@ -42,6 +43,8 @@ export interface PickleballSession {
   created_by: string;
   status: SessionStatus;
   fixture_settings: FixtureSettings | null;
+  counts_toward_leaderboard: boolean;
+  dupr_eligible: boolean;
 }
 
 export type RsvpStatus = "confirmed" | "waitlisted" | "cancelled";
@@ -82,6 +85,7 @@ export interface Match {
   round_number: number | null;
   court_number: number | null;
   source: MatchSource;
+  counts_toward_leaderboard: boolean;
 }
 
 export type PaymentType = "session_fee" | "membership";

@@ -31,6 +31,8 @@ function readSessionFields(formData: FormData) {
   const capacity = Number(formData.get("capacity"));
   const courtsRaw = String(formData.get("courts") ?? "").trim();
   const courts = courtsRaw ? Number(courtsRaw) : null;
+  const countsTowardLeaderboard = formData.get("counts_toward_leaderboard") === "on";
+  const duprEligible = formData.get("dupr_eligible") === "on";
 
   if (!title || !date || !time || !location || !capacity || capacity < 1) {
     return { error: "Fill in every field with a capacity of at least 1." } as const;
@@ -44,7 +46,15 @@ function readSessionFields(formData: FormData) {
     return { error: "That date/time doesn't look valid." } as const;
   }
 
-  return { title, dateTime, location, capacity, courts } as const;
+  return {
+    title,
+    dateTime,
+    location,
+    capacity,
+    courts,
+    countsTowardLeaderboard,
+    duprEligible,
+  } as const;
 }
 
 export async function createSession(
@@ -68,6 +78,8 @@ export async function createSession(
     location: fields.location,
     capacity: fields.capacity,
     courts: fields.courts,
+    counts_toward_leaderboard: fields.countsTowardLeaderboard,
+    dupr_eligible: fields.duprEligible,
     created_by: adminId,
   });
 
@@ -101,6 +113,8 @@ export async function updateSession(
       location: fields.location,
       capacity: fields.capacity,
       courts: fields.courts,
+      counts_toward_leaderboard: fields.countsTowardLeaderboard,
+      dupr_eligible: fields.duprEligible,
     })
     .eq("id", sessionId);
 
@@ -129,4 +143,17 @@ export async function setSessionStatus(
   revalidatePath("/admin/sessions");
   revalidatePath("/sessions");
   revalidatePath("/dashboard");
+}
+
+export async function deleteSession(sessionId: string) {
+  const supabase = await createClient();
+  await requireAdminId(supabase);
+
+  const { error } = await supabase.rpc("delete_session", { p_session_id: sessionId });
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/admin/sessions");
+  revalidatePath("/sessions");
+  revalidatePath("/dashboard");
+  revalidatePath("/leaderboard");
 }

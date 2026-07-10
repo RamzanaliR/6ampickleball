@@ -42,7 +42,7 @@ export default async function SessionDetailPage({
 
   const { data: session } = await supabase
     .from("sessions")
-    .select("id, title, date_time, location, capacity, status, fixture_settings")
+    .select("id, title, date_time, location, capacity, status, fixture_settings, counts_toward_leaderboard")
     .eq("id", id)
     .single();
 
@@ -129,6 +129,13 @@ export default async function SessionDetailPage({
         subtitle={`${formatSessionDate(session.date_time)} · ${formatSessionTime(session.date_time)} · ${session.location}`}
       />
       <div className="mx-auto mt-8 max-w-6xl px-6 pb-16">
+        {!session.counts_toward_leaderboard && (
+          <div className="mb-6 rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-paper-raised)] px-5 py-3">
+            <p className="text-sm text-[var(--color-ink-muted)]">
+              This session&apos;s results don&apos;t count toward the season leaderboard.
+            </p>
+          </div>
+        )}
         {session.status === "upcoming" && (
           <div className="mb-8 flex items-center justify-between rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-paper-raised)] p-5">
             <p className="text-sm text-[var(--color-ink-muted)]">

@@ -289,6 +289,36 @@ This is the part worth understanding rather than just trusting:
       posts inline with a status badge; admin gets a "Pending review"
       section on `/admin/feed` with approve/reject.
 
+## Third round of tweaks
+
+- [x] **Admin can delete sessions**, including previous ones — with a
+      two-step confirm to avoid fat-finger deletions. This needed more
+      than a plain `delete from sessions`: if the session had already-
+      scored matches, a raw cascade delete would remove the matches
+      without ever reversing the win/loss/points they'd applied, quietly
+      corrupting the leaderboard. `delete_session` reverses those points
+      first, then deletes.
+- [x] **Match history everywhere has a day/date dropdown** (dashboard and
+      any player's profile) to jump straight to a specific session
+      instead of scrolling — `components/match-history-list.tsx`, shared
+      by both.
+- [x] **Per-session leaderboard opt-out**, via a checkbox on the session
+      form. A session created with it unchecked (e.g. a tournament) never
+      touches the season leaderboard — its matches still score normally
+      and show up in session standings and match history, they just don't
+      add wins/losses/points to anyone's season total. Players see a
+      "doesn't count toward the leaderboard" notice wherever that
+      session appears. The flag is snapshotted onto each match at the
+      moment it's created (not re-checked live), so toggling a session's
+      setting later can never retroactively change what already-scored
+      matches did.
+- [x] **DUPR session checkbox** — tracking-only for now (no DUPR API),
+      just flags which sessions still need their results entered into
+      DUPR by hand.
+- [x] **DUPR IDs on players** — optional field at signup, editable
+      anytime via the profile modal, shown as a column in the admin
+      roster table (now a real `<table>`, not just stacked rows).
+
 ## Setup
 
 1. **Create a Supabase project** at [supabase.com](https://supabase.com).
@@ -297,8 +327,9 @@ This is the part worth understanding rather than just trusting:
    `supabase/phase4_matches.sql`, `supabase/phase5_payments_attendance.sql`,
    `supabase/phase6_feed.sql`, `supabase/phase7_tweaks.sql`,
    `supabase/phase8_fixtures.sql`, `supabase/phase9_scoring_change.sql`,
-   `supabase/phase10_feed_moderation.sql`, then
-   `supabase/phase11_fixture_visibility.sql`.
+   `supabase/phase10_feed_moderation.sql`,
+   `supabase/phase11_fixture_visibility.sql`, then
+   `supabase/phase12_leaderboard_opt_out_dupr_delete.sql`.
 3. **Env vars.** Copy `.env.local.example` to `.env.local` and fill in your
    project's URL, anon key, and service role key (all under Project
    Settings → API — the service role key is needed for Admin → Players →
@@ -355,7 +386,7 @@ lib/
   actions/rsvp.ts           "I'm in" / cancel server actions
   actions/profile.ts        profile update + password change server actions
   actions/admin-players.ts   approve/reject/add-member server actions
-  actions/admin-sessions.ts  create/update/status server actions
+  actions/admin-sessions.ts  create/update/status/delete server actions
   actions/matches.ts          submit/verify/reject server actions
   actions/fixtures.ts          generate/score fixture server actions
   actions/guests.ts             add-guest server action
@@ -378,6 +409,7 @@ components/
   match-form.tsx                singles/doubles result submission form
   leaderboard-table.tsx          filterable standings table, links to profiles
   session-standings-table.tsx     shared W/L/PF/PA/PD table (admin + player)
+  match-history-list.tsx           shared history + day/date jump dropdown
   fixture-round-navigator.tsx      one round at a time, arrows + swipe
   read-only-match-card.tsx          player-facing match display
   feed-compose-form.tsx              any approved player's post form
@@ -388,6 +420,7 @@ components/
   admin/add-member-form.tsx     create a member account directly
   admin/session-form.tsx        shared create/edit form (incl. courts)
   admin/session-quick-actions.tsx
+  admin/session-delete-button.tsx
   admin/match-verification-row.tsx
   admin/attendance-checkbox.tsx
   admin/add-guest-form.tsx        add new/returning guest to a session
@@ -409,6 +442,7 @@ supabase/
   phase9_scoring_change.sql           win = 1 point (was 2)
   phase10_feed_moderation.sql          feed status column + open posting
   phase11_fixture_visibility.sql        fixture schedule visible to all players
+  phase12_leaderboard_opt_out_dupr_delete.sql  leaderboard opt-out, DUPR, safe delete
 ```
 
 ## Design tokens

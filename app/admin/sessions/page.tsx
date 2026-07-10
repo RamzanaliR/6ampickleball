@@ -5,6 +5,7 @@ import { PageHeader } from "@/components/page-header";
 import { AdminTabs } from "@/components/admin/admin-tabs";
 import { EmptyState } from "@/components/empty-state";
 import { SessionQuickActions } from "@/components/admin/session-quick-actions";
+import { SessionDeleteButton } from "@/components/admin/session-delete-button";
 import { formatSessionDate, formatSessionTime } from "@/lib/format";
 
 const statusStyles: Record<string, string> = {
@@ -31,7 +32,9 @@ export default async function AdminSessionsPage() {
 
   const { data: sessions } = await supabase
     .from("sessions")
-    .select("id, title, date_time, location, capacity, courts, status")
+    .select(
+      "id, title, date_time, location, capacity, courts, status, counts_toward_leaderboard, dupr_eligible"
+    )
     .order("date_time", { ascending: false });
 
   return (
@@ -68,8 +71,22 @@ export default async function AdminSessionsPage() {
                       {s.location} · cap {s.capacity}
                       {s.courts ? ` · ${s.courts} courts` : ""}
                     </p>
+                    {(!s.counts_toward_leaderboard || s.dupr_eligible) && (
+                      <p className="mt-1 flex gap-2">
+                        {!s.counts_toward_leaderboard && (
+                          <span className="rounded-[var(--radius-pill)] border border-[var(--color-line)] px-2 py-0.5 text-xs text-[var(--color-ink-muted)]">
+                            Not on leaderboard
+                          </span>
+                        )}
+                        {s.dupr_eligible && (
+                          <span className="rounded-[var(--radius-pill)] border border-[var(--color-line)] px-2 py-0.5 text-xs text-[var(--color-ink-muted)]">
+                            DUPR
+                          </span>
+                        )}
+                      </p>
+                    )}
                   </div>
-                  <div className="flex items-center gap-4">
+                  <div className="flex flex-wrap items-center gap-4">
                     <span
                       className={`font-[family-name:var(--font-mono)] text-xs uppercase tracking-widest ${statusStyles[s.status]}`}
                     >
@@ -94,6 +111,7 @@ export default async function AdminSessionsPage() {
                       Edit
                     </Link>
                     <SessionQuickActions sessionId={s.id} status={s.status} />
+                    <SessionDeleteButton sessionId={s.id} />
                   </div>
                 </div>
               ))}

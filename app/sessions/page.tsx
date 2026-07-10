@@ -35,7 +35,7 @@ export default async function SessionsPage() {
 
   const { data: sessions } = await supabase
     .from("sessions")
-    .select("id, title, date_time, location, capacity, status")
+    .select("id, title, date_time, location, capacity, status, counts_toward_leaderboard")
     .in("status", ["upcoming", "completed"])
     .order("date_time", { ascending: true });
 
@@ -117,6 +117,11 @@ export default async function SessionsPage() {
                       Fixtures live
                     </span>
                   </div>
+                  {!s.counts_toward_leaderboard && (
+                    <p className="mt-2 text-xs text-[var(--color-ink-muted)]">
+                      Doesn&apos;t count toward the season leaderboard
+                    </p>
+                  )}
                   <p className="mt-4 text-sm font-medium text-[var(--color-court)]">
                     View fixtures &amp; standings →
                   </p>
@@ -171,6 +176,11 @@ export default async function SessionsPage() {
                       {s.title}
                     </p>
                     <p className="text-sm text-[var(--color-ink-muted)]">{s.location}</p>
+                    {!s.counts_toward_leaderboard && (
+                      <p className="mt-0.5 text-xs text-[var(--color-ink-muted)]">
+                        Not counted on leaderboard
+                      </p>
+                    )}
                   </Link>
                   <div className="flex items-center gap-4">
                     <p className="font-[family-name:var(--font-mono)] text-sm text-[var(--color-ink-muted)]">
