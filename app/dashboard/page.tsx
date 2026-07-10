@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/page-header";
 import { EmptyState } from "@/components/empty-state";
 import { ProfileForm } from "@/components/profile-form";
-import { formatSessionDate, formatSessionTime } from "@/lib/format";
+import { formatSessionDate, formatSessionTime, formatTZS } from "@/lib/format";
 import type { MatchSet } from "@/lib/types";
 
 export default async function DashboardPage() {
@@ -62,6 +62,20 @@ export default async function DashboardPage() {
 
   const matchSessionById = new Map((matchSessions ?? []).map((s) => [s.id, s]));
   const matchPlayerNameById = new Map((matchPlayers ?? []).map((p) => [p.id, p.name]));
+
+  const { data: myPayments } = await supabase
+    .from("payments")
+    .select("id, type, amount, status, period, session_id")
+    .eq("player_id", user.id)
+    .order("created_at", { ascending: false });
+
+  const paymentSessionIds = [
+    ...new Set((myPayments ?? []).map((p) => p.session_id).filter(Boolean)),
+  ] as string[];
+  const { data: paymentSessions } = paymentSessionIds.length
+    ? await supabase.from("sessions").select("id, title").in("id", paymentSessionIds)
+    : { data: [] as { id: string; title: string }[] };
+  const paymentSessionTitleById = new Map((paymentSessions ?? []).map((s) => [s.id, s.title]));
 
   return (
     <div>
@@ -125,6 +139,48 @@ export default async function DashboardPage() {
                         </div>
                       );
                     })}
+                  </div>
+                )}
+              </div>
+            </section>
+
+            <section>
+              <h2 className="font-[family-name:var(--font-display)] text-xl font-bold uppercase tracking-tight text-[var(--color-ink)]">
+                Payments
+              </h2>
+              <div className="mt-4">
+                {!myPayments || myPayments.length === 0 ? (
+                  <EmptyState message="No charges on your account." />
+                ) : (
+                  <div className="overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-paper-raised)]">
+                    {myPayments.map((p, i) => (
+                      <div
+                        key={p.id}
+                        className={`flex items-center justify-between px-5 py-4 ${
+                          i !== myPayments.length - 1 ? "kitchen-line" : ""
+                        }`}
+                      >
+                        <div>
+                          <p className="font-medium text-[var(--color-ink)]">
+                            {p.type === "session_fee"
+                              ? (paymentSessionTitleById.get(p.session_id ?? "") ?? "Session fee")
+                              : `Membership · ${p.period}`}
+                          </p>
+                          <p className="font-[family-name:var(--font-mono)] text-sm text-[var(--color-ink-muted)]">
+                            {formatTZS(p.amount)}
+                          </p>
+                        </div>
+                        <span
+                          className={
+                            p.status === "paid"
+                              ? "shrink-0 rounded-[var(--radius-pill)] bg-[var(--color-court)] px-3 py-1 text-xs font-semibold text-white"
+                              : "shrink-0 rounded-[var(--radius-pill)] border border-[var(--color-ball)] bg-[var(--color-ball)]/30 px-3 py-1 text-xs font-semibold text-[var(--color-ink)]"
+                          }
+                        >
+                          {p.status === "paid" ? "Paid" : "Due"}
+                        </span>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>

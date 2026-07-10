@@ -79,6 +79,7 @@ export interface Payment {
   method: PaymentMethod;
   marked_by: string | null;
   paid_at: string | null;
+  created_at: string;
 }
 
 export interface CommunityFeedPost {

@@ -86,12 +86,34 @@ express doubles (2 vs 2). `supabase/phase4_matches.sql` replaces it with
 (`[{"a":11,"b":7}, ...]`) instead of a free-text score, since structured
 scores are what let the winning side be computed instead of hand-picked.
 
+## Phase 5 — Payments + attendance ✅
+
+- [x] Attendance (`/admin/sessions/[id]/attendance`) — a checklist of every
+      approved player for a given session, separate from RSVPs so no-shows
+      and walk-ins both show up correctly. Players who RSVP'd confirmed are
+      sorted to the top and flagged
+- [x] Payments (`/admin/payments`) — admin can add a charge (session fee or
+      membership) for any player and toggle it paid/unpaid, with filters by
+      player, session, status, and period
+- [x] Dashboard shows each player their own payment history (read-only, per
+      the spec — players can see status but never edit it)
+- [x] Admin overview gets a fifth stat card: unpaid dues, linking straight
+      into the pre-filtered payments list
+
+**Note on the data model:** `payments` and `attendance` existed in
+`schema.sql` from Phase 1 with RLS *enabled* but no policies yet — meaning
+nothing could actually read or write them until now. That's normal; it's
+the same default-deny pattern used throughout so nothing was ever
+accidentally left wide open while unfinished. `supabase/phase5_payments_attendance.sql`
+adds the missing policies and a `created_at` column on `payments` (needed
+to sort history — the id is a uuid, not a timestamp).
+
 ## Setup
 
 1. **Create a Supabase project** at [supabase.com](https://supabase.com).
 2. **Run the schema.** Open the SQL editor in your Supabase project and run,
    in order: `supabase/schema.sql`, `supabase/phase2_sessions_rsvp.sql`,
-   then `supabase/phase4_matches.sql`.
+   `supabase/phase4_matches.sql`, then `supabase/phase5_payments_attendance.sql`.
 3. **Env vars.** Copy `.env.local.example` to `.env.local` and fill in your
    project's URL + anon key (Project Settings → API).
 4. **Install & run:**
@@ -116,7 +138,7 @@ app/
   (auth)/login/           sign in
   (auth)/signup/          sign up
   auth/callback/route.ts  email confirmation exchange
-  dashboard/               player dashboard (profile, stats, RSVPs, match history)
+  dashboard/               player dashboard (profile, stats, RSVPs, matches, payments)
   sessions/                sessions list + RSVP/waitlist
   sessions/[id]/log-match/  submit a match result
   leaderboard/              live standings + tier filter
@@ -125,7 +147,10 @@ app/
   admin/sessions/             session list + quick actions
   admin/sessions/new/          create session
   admin/sessions/[id]/edit/     edit session
+  admin/sessions/[id]/attendance/  per-session attendance checklist
   admin/matches/               match verification queue
+  admin/payments/               payments list + filters
+  admin/payments/new/            add a charge
 lib/
   supabase/client.ts       browser Supabase client
   supabase/server.ts       server Supabase client
@@ -135,7 +160,9 @@ lib/
   actions/admin-players.ts   approve/reject server actions
   actions/admin-sessions.ts  create/update/status server actions
   actions/matches.ts          submit/verify/reject server actions
-  format.ts                  date/time helpers, pinned to Africa/Dar_es_Salaam
+  actions/attendance.ts        toggle attendance server action
+  actions/payments.ts           create charge / toggle paid server actions
+  format.ts                  date/time + TZS currency helpers
   types.ts                 shared TS types mirroring the schema
 components/
   nav.tsx / nav-bar.tsx     responsive nav
@@ -149,15 +176,19 @@ components/
   page-header.tsx           interior page header
   empty-state.tsx            shared empty-state block
   logo-mark.tsx              paddle + ball glyph
-  admin/admin-tabs.tsx        Overview/Players/Sessions/Matches sub-nav
+  admin/admin-tabs.tsx        Overview/Players/Sessions/Matches/Payments sub-nav
   admin/player-approval-row.tsx
   admin/session-form.tsx        shared create/edit form
   admin/session-quick-actions.tsx
   admin/match-verification-row.tsx
+  admin/attendance-checkbox.tsx
+  admin/payment-form.tsx
+  admin/payment-status-toggle.tsx
 supabase/
   schema.sql                 tables, trigger, RLS foundation
   phase2_sessions_rsvp.sql    sessions/rsvps RLS + RSVP RPC functions
   phase4_matches.sql           team-based matches table + verify/reject RPCs
+  phase5_payments_attendance.sql  payments/attendance RLS + created_at
 ```
 
 ## Design tokens
@@ -172,5 +203,5 @@ rather than fetched from Google at build time — see the note in Phase 3.
 
 ## Next phases
 
-- **Phase 5** — payment tracking UI, attendance log
-- **Phase 6** — community feed, notifications, polish pass
+- **Phase 6** — community feed, notifications, polish pass (last phase in
+  the original spec)

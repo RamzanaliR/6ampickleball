@@ -25,11 +25,13 @@ export default async function AdminPage() {
     { count: upcomingCount },
     { count: rosterCount },
     { count: pendingMatchCount },
+    { count: unpaidCount },
   ] = await Promise.all([
     supabase.from("players").select("id", { count: "exact", head: true }).eq("status", "pending"),
     supabase.from("sessions").select("id", { count: "exact", head: true }).eq("status", "upcoming"),
     supabase.from("players").select("id", { count: "exact", head: true }).eq("status", "approved"),
     supabase.from("matches").select("id", { count: "exact", head: true }).eq("verified", false),
+    supabase.from("payments").select("id", { count: "exact", head: true }).eq("status", "unpaid"),
   ]);
 
   return (
@@ -38,7 +40,7 @@ export default async function AdminPage() {
       <div className="mx-auto mt-8 max-w-6xl px-6 pb-16">
         <AdminTabs active="/admin" />
 
-        <div className="mt-6 grid gap-4 md:grid-cols-4">
+        <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
           <StatCard
             label="Pending approvals"
             value={pendingCount ?? 0}
@@ -54,6 +56,11 @@ export default async function AdminPage() {
             label="Results to verify"
             value={pendingMatchCount ?? 0}
             href="/admin/matches"
+          />
+          <StatCard
+            label="Unpaid dues"
+            value={unpaidCount ?? 0}
+            href="/admin/payments?status=unpaid"
           />
         </div>
       </div>

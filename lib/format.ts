@@ -48,3 +48,7 @@ export function toDarTimeInputValue(iso: string) {
 export function darDateTimeToISO(date: string, time: string) {
   return new Date(`${date}T${time}:00+03:00`).toISOString();
 }
+
+export function formatTZS(amount: number) {
+  return `TZS ${new Intl.NumberFormat("en-US").format(amount)}`;
+}

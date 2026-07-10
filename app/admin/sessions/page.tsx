@@ -75,6 +75,12 @@ export default async function AdminSessionsPage() {
                       {s.status}
                     </span>
                     <Link
+                      href={`/admin/sessions/${s.id}/attendance`}
+                      className="text-sm font-medium text-[var(--color-ink)] hover:text-[var(--color-court)]"
+                    >
+                      Attendance
+                    </Link>
+                    <Link
                       href={`/admin/sessions/${s.id}/edit`}
                       className="text-sm font-medium text-[var(--color-ink)] hover:text-[var(--color-court)]"
                     >
