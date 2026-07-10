@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/page-header";
 import { EmptyState } from "@/components/empty-state";
 import { SessionCard } from "@/components/session-card";
-import { formatSessionDate } from "@/lib/format";
+import { formatSessionDate, formatSessionTime } from "@/lib/format";
 
 type RsvpState = "confirmed" | "waitlisted" | "none";
 
@@ -39,20 +39,35 @@ export default async function SessionsPage() {
     .in("status", ["upcoming", "completed"])
     .order("date_time", { ascending: true });
 
-  const upcoming = (sessions ?? []).filter((s) => s.status === "upcoming");
-  const completed = (sessions ?? [])
+  const allUpcoming = (sessions ?? []).filter((s) => s.status === "upcoming");
+  const previous = (sessions ?? [])
     .filter((s) => s.status === "completed")
-    .slice(-5)
+    .slice(-20)
     .reverse();
 
   const sessionIds = (sessions ?? []).map((s) => s.id);
-  const { data: rsvps } = sessionIds.length
-    ? await supabase
-        .from("rsvps")
-        .select("session_id, player_id, status")
-        .in("session_id", sessionIds)
-        .in("status", ["confirmed", "waitlisted"])
-    : { data: [] };
+
+  const [{ data: rsvps }, { data: fixtureMatches }] = await Promise.all([
+    sessionIds.length
+      ? supabase
+          .from("rsvps")
+          .select("session_id, player_id, status")
+          .in("session_id", sessionIds)
+          .in("status", ["confirmed", "waitlisted"])
+      : Promise.resolve({ data: [] }),
+    sessionIds.length
+      ? supabase
+          .from("matches")
+          .select("session_id")
+          .in("session_id", sessionIds)
+          .eq("source", "fixture")
+      : Promise.resolve({ data: [] }),
+  ]);
+
+  const sessionsWithFixtures = new Set((fixtureMatches ?? []).map((m) => m.session_id));
+
+  const current = allUpcoming.filter((s) => sessionsWithFixtures.has(s.id));
+  const upcoming = allUpcoming.filter((s) => !sessionsWithFixtures.has(s.id));
 
   const confirmedCountBySession = new Map<string, number>();
   const myStatusBySession = new Map<string, RsvpState>();
@@ -76,6 +91,41 @@ export default async function SessionsPage() {
         subtitle="Say I'm in before spots fill — the waitlist kicks in automatically."
       />
       <div className="mx-auto mt-8 max-w-6xl space-y-12 px-6 pb-16">
+        {current.length > 0 && (
+          <section>
+            <h2 className="font-[family-name:var(--font-display)] text-xl font-bold uppercase tracking-tight text-[var(--color-ink)]">
+              Current
+            </h2>
+            <div className="mt-4 grid gap-4 md:grid-cols-2">
+              {current.map((s) => (
+                <Link
+                  key={s.id}
+                  href={`/sessions/${s.id}`}
+                  className="rounded-[var(--radius-card)] border border-[var(--color-court)] bg-[var(--color-paper-raised)] p-6 transition-colors hover:border-[var(--color-court-dark)]"
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="font-[family-name:var(--font-mono)] text-xs uppercase tracking-widest text-[var(--color-court)]">
+                        {formatSessionDate(s.date_time)} · {formatSessionTime(s.date_time)}
+                      </p>
+                      <h3 className="mt-1 font-[family-name:var(--font-display)] text-2xl font-bold uppercase tracking-tight text-[var(--color-ink)]">
+                        {s.title}
+                      </h3>
+                      <p className="mt-1 text-sm text-[var(--color-ink-muted)]">{s.location}</p>
+                    </div>
+                    <span className="shrink-0 rounded-[var(--radius-pill)] bg-[var(--color-court)] px-3 py-1 text-xs font-semibold text-white">
+                      Fixtures live
+                    </span>
+                  </div>
+                  <p className="mt-4 text-sm font-medium text-[var(--color-court)]">
+                    View fixtures &amp; standings →
+                  </p>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
+
         <section>
           <h2 className="font-[family-name:var(--font-display)] text-xl font-bold uppercase tracking-tight text-[var(--color-ink)]">
             Upcoming
@@ -103,23 +153,25 @@ export default async function SessionsPage() {
           </div>
         </section>
 
-        {completed.length > 0 && (
+        {previous.length > 0 && (
           <section>
             <h2 className="font-[family-name:var(--font-display)] text-xl font-bold uppercase tracking-tight text-[var(--color-ink)]">
-              Recently completed
+              Previous
             </h2>
             <div className="mt-4 overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-paper-raised)]">
-              {completed.map((s, i) => (
+              {previous.map((s, i) => (
                 <div
                   key={s.id}
                   className={`flex items-center justify-between px-6 py-4 ${
-                    i !== completed.length - 1 ? "kitchen-line" : ""
+                    i !== previous.length - 1 ? "kitchen-line" : ""
                   }`}
                 >
-                  <div>
-                    <p className="font-medium text-[var(--color-ink)]">{s.title}</p>
+                  <Link href={`/sessions/${s.id}`} className="min-w-0 flex-1">
+                    <p className="font-medium text-[var(--color-ink)] hover:text-[var(--color-court)]">
+                      {s.title}
+                    </p>
                     <p className="text-sm text-[var(--color-ink-muted)]">{s.location}</p>
-                  </div>
+                  </Link>
                   <div className="flex items-center gap-4">
                     <p className="font-[family-name:var(--font-mono)] text-sm text-[var(--color-ink-muted)]">
                       {formatSessionDate(s.date_time)}

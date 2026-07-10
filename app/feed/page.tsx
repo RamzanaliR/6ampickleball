@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/page-header";
 import { EmptyState } from "@/components/empty-state";
+import { FeedComposeForm } from "@/components/feed-compose-form";
 import { formatSessionDate } from "@/lib/format";
 
 export default async function FeedPage() {
@@ -29,9 +30,11 @@ export default async function FeedPage() {
     );
   }
 
+  // RLS already limits this to approved posts (everyone's) plus the
+  // caller's own posts regardless of status — no extra filtering needed.
   const { data: posts } = await supabase
     .from("community_feed")
-    .select("id, content, image_url, created_at, posted_by")
+    .select("id, content, image_url, status, created_at, posted_by")
     .order("created_at", { ascending: false });
 
   const posterIds = [...new Set((posts ?? []).map((p) => p.posted_by))];
@@ -44,8 +47,12 @@ export default async function FeedPage() {
     <div>
       <PageHeader eyebrow="Club feed" title="What's happening" />
       <div className="mx-auto mt-8 max-w-3xl px-6 pb-16">
+        <div className="mb-8 rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-paper-raised)] p-6">
+          <FeedComposeForm />
+        </div>
+
         {!posts || posts.length === 0 ? (
-          <EmptyState message="No announcements yet." />
+          <EmptyState message="No announcements yet — be the first to post." />
         ) : (
           <div className="space-y-4">
             {posts.map((post) => (
@@ -53,7 +60,20 @@ export default async function FeedPage() {
                 key={post.id}
                 className="rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-paper-raised)] p-6"
               >
-                <p className="whitespace-pre-wrap text-[var(--color-ink)]">{post.content}</p>
+                <div className="flex items-start justify-between gap-4">
+                  <p className="whitespace-pre-wrap text-[var(--color-ink)]">{post.content}</p>
+                  {post.status !== "approved" && (
+                    <span
+                      className={
+                        post.status === "pending"
+                          ? "shrink-0 rounded-[var(--radius-pill)] border border-[var(--color-ball)] bg-[var(--color-ball)]/30 px-3 py-1 text-xs font-semibold text-[var(--color-ink)]"
+                          : "shrink-0 rounded-[var(--radius-pill)] border border-[var(--color-line)] px-3 py-1 text-xs font-semibold text-[var(--color-ink-muted)]"
+                      }
+                    >
+                      {post.status === "pending" ? "Pending review" : "Rejected"}
+                    </span>
+                  )}
+                </div>
                 {post.image_url && (
                   // eslint-disable-next-line @next/next/no-img-element -- arbitrary external URL, next/image would need remotePatterns configured per-domain
                   <img
@@ -63,7 +83,7 @@ export default async function FeedPage() {
                   />
                 )}
                 <p className="mt-4 font-[family-name:var(--font-mono)] text-xs uppercase tracking-widest text-[var(--color-ink-muted)]">
-                  {posterNameById.get(post.posted_by) ?? "Admin"} ·{" "}
+                  {posterNameById.get(post.posted_by) ?? "Unknown"} ·{" "}
                   {formatSessionDate(post.created_at)}
                 </p>
               </div>

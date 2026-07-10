@@ -240,14 +240,65 @@ This is the part worth understanding rather than just trusting:
   nothing stops you from asking for the live version later if the label
   turns out not to be enough.
 
+## Second round of tweaks
+
+- [x] **Profile is now a read-only overview** on the dashboard, with an
+      "Edit profile" button that opens a modal — the profile form and
+      password change both live inside it, so there's no more permanently-
+      editable form sitting on the page or a separate Password section.
+- [x] **Global leaderboard scoring changed**: a win is now worth **1
+      point** (was 2), loss stays 0. Added a **GP** (games played)
+      column; deliberately did *not* add PF/PA/PD to the global board —
+      that level of detail lives on the per-session standings instead
+      (see below), keeping the season view simple.
+- [x] **Sessions are now Current / Upcoming / Previous.** A session
+      becomes "Current" the moment fixtures are generated for it (shown
+      first); everything else upcoming stays in "Upcoming" below it;
+      completed sessions are "Previous" (last 20, most recent first) so
+      players can look back at old results, not just the last 5.
+- [x] **Players can view fixtures and results from their own side** —
+      clicking any Current or Previous session opens `/sessions/[id]`,
+      a read-only version of the same fixtures + standings view admin
+      sees (no scoring controls). This needed a real RLS fix, not just
+      a UI one: the original policy only let a match's own participants
+      (or admin) see it before it was scored, which is right for a
+      manually-submitted result but wrong for a fixture schedule —
+      players need to see the *whole* round, not just their own games.
+      `supabase/phase11_fixture_visibility.sql` opens fixture-sourced
+      matches to any approved player regardless of score state; manually
+      logged matches keep the original, narrower visibility.
+- [x] **Fixtures pages (both admin and player) are now 2-column**:
+      session standings on the left (with **PF/PA/PD** — points for,
+      against, and the difference, summed from the actual set scores,
+      e.g. 11-6, 8-9, 11-2), one round of matches at a time on the
+      right, with prev/next buttons and touch-swipe support
+      (`components/fixture-round-navigator.tsx`).
+- [x] **Any approved player can view any other player's profile and
+      stats** (`/players/[id]`) — stat cards plus match history, same
+      shape as your own dashboard history. Leaderboard names link there.
+      Works under existing RLS with no new policies needed, since a
+      verified match was already publicly visible.
+- [x] **The guest form now shows who's already confirmed** for the
+      session (players and guests together) right below it, so admin
+      isn't adding guests blind.
+- [x] **Feed is now open to everyone, with admin approval.** Any
+      approved player gets a compose box at the top of `/feed` — posts
+      go to a pending queue and only become public once an admin
+      approves them (admin's own posts still publish immediately, no
+      self-review needed). A player sees their own pending/rejected
+      posts inline with a status badge; admin gets a "Pending review"
+      section on `/admin/feed` with approve/reject.
+
 ## Setup
 
 1. **Create a Supabase project** at [supabase.com](https://supabase.com).
 2. **Run the schema.** Open the SQL editor in your Supabase project and run,
    in order: `supabase/schema.sql`, `supabase/phase2_sessions_rsvp.sql`,
    `supabase/phase4_matches.sql`, `supabase/phase5_payments_attendance.sql`,
-   `supabase/phase6_feed.sql`, `supabase/phase7_tweaks.sql`, then
-   `supabase/phase8_fixtures.sql`.
+   `supabase/phase6_feed.sql`, `supabase/phase7_tweaks.sql`,
+   `supabase/phase8_fixtures.sql`, `supabase/phase9_scoring_change.sql`,
+   `supabase/phase10_feed_moderation.sql`, then
+   `supabase/phase11_fixture_visibility.sql`.
 3. **Env vars.** Copy `.env.local.example` to `.env.local` and fill in your
    project's URL, anon key, and service role key (all under Project
    Settings → API — the service role key is needed for Admin → Players →
@@ -274,11 +325,13 @@ app/
   (auth)/login/           sign in
   (auth)/signup/          sign up
   auth/callback/route.ts  email confirmation exchange
-  dashboard/               player dashboard (profile, password, stats, sessions, matches, payments)
-  sessions/                sessions list + "I'm in"/waitlist
+  dashboard/               player dashboard (profile overview, stats, sessions, matches, payments)
+  sessions/                sessions list: Current / Upcoming / Previous
+  sessions/[id]/            read-only fixtures + standings for one session
   sessions/[id]/log-match/  submit a match result
-  leaderboard/              live standings + tier filter
-  feed/                     read-only club announcements
+  leaderboard/              live standings (GP/W/L/Points) + tier filter
+  players/[id]/              any player's public stats + match history
+  feed/                     read + compose club announcements (pending review)
   admin/                    admin overview
   admin/players/             approval queue + roster
   admin/players/new/           add a member directly
@@ -286,11 +339,11 @@ app/
   admin/sessions/new/          create session
   admin/sessions/[id]/edit/     edit session
   admin/sessions/[id]/attendance/  per-session attendance checklist
-  admin/sessions/[id]/fixtures/    generate/score fixtures, same-day standings
+  admin/sessions/[id]/fixtures/    generate/score fixtures, 2-col standings+rounds
   admin/matches/               match verification queue (manual matches only)
   admin/payments/               payments list + filters
   admin/payments/new/            add a charge
-  admin/feed/                    post/delete announcements
+  admin/feed/                    direct-post form + pending-review moderation queue
   icon.png, apple-icon.png, favicon.ico   club logo, all icon sizes
 lib/
   supabase/client.ts       browser Supabase client
@@ -298,7 +351,7 @@ lib/
   supabase/middleware.ts   session refresh + route protection
   supabase/admin.ts         service-role client (admin add-member only)
   fixtures/generate-classic-robin.ts  the round-robin scheduling algorithm
-  fixtures/standings.ts                same-day standings calculator
+  fixtures/standings.ts                same-day standings (W/L/PF/PA)
   actions/rsvp.ts           "I'm in" / cancel server actions
   actions/profile.ts        profile update + password change server actions
   actions/admin-players.ts   approve/reject/add-member server actions
@@ -308,20 +361,26 @@ lib/
   actions/guests.ts             add-guest server action
   actions/attendance.ts        toggle attendance server action
   actions/payments.ts           create charge / toggle paid server actions
-  actions/feed.ts                post/delete announcement server actions
+  actions/feed.ts                post (admin/player) / moderate / delete
   format.ts                  date/time + TZS currency helpers
   types.ts                 shared TS types mirroring the schema
 components/
   nav.tsx / nav-bar.tsx     responsive nav (real club logo)
   auth-card.tsx             shared auth form shell
   form-field.tsx             shared text input
-  profile-form.tsx           editable profile form
-  change-password-form.tsx    self-service password change
+  modal.tsx                   reusable dialog-based modal
+  profile-form.tsx           editable profile form (used inside the modal)
+  profile-overview.tsx        read-only summary + "Edit profile" → modal
+  change-password-form.tsx    self-service password change (inside the modal)
   session-card.tsx            session card w/ "I'm in" + WhatsApp share
   rsvp-button.tsx              "I'm in"/cancel/waitlist button
   whatsapp-share-button.tsx     wa.me pre-filled share link
   match-form.tsx                singles/doubles result submission form
-  leaderboard-table.tsx          filterable standings table
+  leaderboard-table.tsx          filterable standings table, links to profiles
+  session-standings-table.tsx     shared W/L/PF/PA/PD table (admin + player)
+  fixture-round-navigator.tsx      one round at a time, arrows + swipe
+  read-only-match-card.tsx          player-facing match display
+  feed-compose-form.tsx              any approved player's post form
   page-header.tsx           interior page header
   empty-state.tsx            shared empty-state block
   admin/admin-tabs.tsx        Overview/Players/Sessions/Matches/Payments/Feed sub-nav
@@ -336,8 +395,9 @@ components/
   admin/fixture-match-score-form.tsx  live score entry + edit
   admin/payment-form.tsx
   admin/payment-status-toggle.tsx
-  admin/feed-post-form.tsx
-  admin/feed-post-row.tsx
+  admin/feed-post-form.tsx        admin's direct-post form
+  admin/feed-post-row.tsx          published post row + delete
+  admin/feed-moderation-row.tsx     pending post row + approve/reject
 supabase/
   schema.sql                 tables, trigger, RLS foundation
   phase2_sessions_rsvp.sql    sessions/rsvps RLS + RSVP RPC functions
@@ -346,6 +406,9 @@ supabase/
   phase6_feed.sql                  community_feed RLS
   phase7_tweaks.sql                 courts column + guest member support
   phase8_fixtures.sql                fixture columns + score/edit RPCs
+  phase9_scoring_change.sql           win = 1 point (was 2)
+  phase10_feed_moderation.sql          feed status column + open posting
+  phase11_fixture_visibility.sql        fixture schedule visible to all players
 ```
 
 ## Design tokens

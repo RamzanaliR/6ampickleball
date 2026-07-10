@@ -5,7 +5,8 @@ export interface StandingsRow {
   wins: number;
   losses: number;
   points: number;
-  setDiff: number;
+  pf: number;
+  pa: number;
 }
 
 interface StandingsInputMatch {
@@ -25,7 +26,7 @@ export function computeSameDayStandings(
   function ensure(id: string): StandingsRow {
     let row = rows.get(id);
     if (!row) {
-      row = { playerId: id, wins: 0, losses: 0, points: 0, setDiff: 0 };
+      row = { playerId: id, wins: 0, losses: 0, points: 0, pf: 0, pa: 0 };
       rows.set(id, row);
     }
     return row;
@@ -36,21 +37,27 @@ export function computeSameDayStandings(
 
     const winners = m.winning_team === "a" ? m.team_a : m.team_b;
     const losers = m.winning_team === "a" ? m.team_b : m.team_a;
-    const setsWonByWinners = m.sets.filter((s) =>
-      m.winning_team === "a" ? s.a > s.b : s.b > s.a
-    ).length;
-    const setsWonByLosers = m.sets.length - setsWonByWinners;
+    const winnerPoints = m.sets.reduce(
+      (sum, s) => sum + (m.winning_team === "a" ? s.a : s.b),
+      0
+    );
+    const loserPoints = m.sets.reduce(
+      (sum, s) => sum + (m.winning_team === "a" ? s.b : s.a),
+      0
+    );
 
     for (const id of winners) {
       const row = ensure(id);
       row.wins += 1;
       if (scoring === "points") row.points += 1;
-      row.setDiff += setsWonByWinners - setsWonByLosers;
+      row.pf += winnerPoints;
+      row.pa += loserPoints;
     }
     for (const id of losers) {
       const row = ensure(id);
       row.losses += 1;
-      row.setDiff += setsWonByLosers - setsWonByWinners;
+      row.pf += loserPoints;
+      row.pa += winnerPoints;
     }
   }
 
@@ -63,7 +70,8 @@ export function sortStandings(
   tiebreak: FixtureTiebreak
 ): StandingsRow[] {
   const primary = (r: StandingsRow) => (rankBy === "points" ? r.points : r.wins);
-  const secondary = (r: StandingsRow) => (tiebreak === "point_diff" ? r.setDiff : r.wins);
+  const secondary = (r: StandingsRow) =>
+    tiebreak === "point_diff" ? r.pf - r.pa : r.wins;
 
   return [...rows].sort((a, b) => {
     const p = primary(b) - primary(a);

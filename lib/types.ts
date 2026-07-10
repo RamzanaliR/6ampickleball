@@ -102,10 +102,13 @@ export interface Payment {
   created_at: string;
 }
 
+export type FeedPostStatus = "pending" | "approved" | "rejected";
+
 export interface CommunityFeedPost {
   id: string;
   posted_by: string;
   content: string;
   image_url: string | null;
+  status: FeedPostStatus;
   created_at: string;
 }

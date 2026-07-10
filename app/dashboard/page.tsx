@@ -2,8 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/page-header";
 import { EmptyState } from "@/components/empty-state";
-import { ProfileForm } from "@/components/profile-form";
-import { ChangePasswordForm } from "@/components/change-password-form";
+import { ProfileOverview } from "@/components/profile-overview";
 import { formatSessionDate, formatSessionTime, formatTZS } from "@/lib/format";
 import type { MatchSet } from "@/lib/types";
 
@@ -98,20 +97,11 @@ export default async function DashboardPage() {
                 Profile
               </h2>
               <div className="mt-4 rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-paper-raised)] p-6">
-                <ProfileForm
+                <ProfileOverview
                   name={player?.name ?? ""}
                   phone={player?.phone ?? null}
                   skillTier={player?.skill_tier ?? null}
                 />
-              </div>
-            </section>
-
-            <section>
-              <h2 className="font-[family-name:var(--font-display)] text-xl font-bold uppercase tracking-tight text-[var(--color-ink)]">
-                Password
-              </h2>
-              <div className="mt-4 rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-paper-raised)] p-6">
-                <ChangePasswordForm />
               </div>
             </section>
           </div>

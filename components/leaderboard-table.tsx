@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 
 type LeaderboardPlayer = {
+  id: string;
   name: string;
   points: number;
   wins: number;
@@ -35,12 +37,13 @@ export function LeaderboardTable({ players }: { players: LeaderboardPlayer[] }) 
       </div>
 
       <div className="overflow-x-auto rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-paper-raised)]">
-        <table className="w-full min-w-[480px] text-left">
+        <table className="w-full min-w-[520px] text-left">
           <thead>
             <tr className="kitchen-line font-[family-name:var(--font-mono)] text-xs uppercase tracking-widest text-[var(--color-ink-muted)]">
               <th className="px-6 py-3">#</th>
               <th className="px-6 py-3">Player</th>
               <th className="px-6 py-3">Tier</th>
+              <th className="px-6 py-3 text-right">GP</th>
               <th className="px-6 py-3 text-right">W</th>
               <th className="px-6 py-3 text-right">L</th>
               <th className="px-6 py-3 text-right">Points</th>
@@ -48,13 +51,23 @@ export function LeaderboardTable({ players }: { players: LeaderboardPlayer[] }) 
           </thead>
           <tbody>
             {filtered.map((p, i) => (
-              <tr key={p.name + i} className="border-b border-[var(--color-line)] last:border-0">
+              <tr key={p.id} className="border-b border-[var(--color-line)] last:border-0">
                 <td className="px-6 py-3 font-[family-name:var(--font-mono)] text-[var(--color-ink-muted)]">
                   {i + 1}
                 </td>
-                <td className="px-6 py-3 font-medium text-[var(--color-ink)]">{p.name}</td>
+                <td className="px-6 py-3 font-medium">
+                  <Link
+                    href={`/players/${p.id}`}
+                    className="text-[var(--color-ink)] transition-colors hover:text-[var(--color-court)]"
+                  >
+                    {p.name}
+                  </Link>
+                </td>
                 <td className="px-6 py-3 capitalize text-[var(--color-ink-muted)]">
                   {p.skill_tier ?? "—"}
+                </td>
+                <td className="px-6 py-3 text-right font-[family-name:var(--font-mono)] text-[var(--color-ink-muted)]">
+                  {p.wins + p.losses}
                 </td>
                 <td className="px-6 py-3 text-right font-[family-name:var(--font-mono)]">
                   {p.wins}

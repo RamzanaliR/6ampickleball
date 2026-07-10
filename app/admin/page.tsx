@@ -26,6 +26,7 @@ export default async function AdminPage() {
     { count: rosterCount },
     { count: pendingMatchCount },
     { count: unpaidCount },
+    { count: pendingFeedCount },
   ] = await Promise.all([
     supabase.from("players").select("id", { count: "exact", head: true }).eq("status", "pending"),
     supabase.from("sessions").select("id", { count: "exact", head: true }).eq("status", "upcoming"),
@@ -36,6 +37,10 @@ export default async function AdminPage() {
       .eq("verified", false)
       .eq("source", "manual"),
     supabase.from("payments").select("id", { count: "exact", head: true }).eq("status", "unpaid"),
+    supabase
+      .from("community_feed")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "pending"),
   ]);
 
   return (
@@ -44,7 +49,7 @@ export default async function AdminPage() {
       <div className="mx-auto mt-8 max-w-6xl px-6 pb-16">
         <AdminTabs active="/admin" />
 
-        <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-6">
           <StatCard
             label="Pending approvals"
             value={pendingCount ?? 0}
@@ -65,6 +70,11 @@ export default async function AdminPage() {
             label="Unpaid dues"
             value={unpaidCount ?? 0}
             href="/admin/payments?status=unpaid"
+          />
+          <StatCard
+            label="Feed posts to review"
+            value={pendingFeedCount ?? 0}
+            href="/admin/feed"
           />
         </div>
       </div>
