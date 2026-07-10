@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/page-header";
@@ -38,6 +39,15 @@ export default async function AdminPlayersPage() {
       <PageHeader eyebrow="Admin" title="Players" />
       <div className="mx-auto mt-8 max-w-6xl px-6 pb-16">
         <AdminTabs active="/admin/players" />
+
+        <div className="mt-6 flex justify-end">
+          <Link
+            href="/admin/players/new"
+            className="rounded-[var(--radius-pill)] bg-[var(--color-court)] px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[var(--color-court-dark)]"
+          >
+            Add member
+          </Link>
+        </div>
 
         <section className="mt-6">
           <h2 className="font-[family-name:var(--font-display)] text-xl font-bold uppercase tracking-tight text-[var(--color-ink)]">

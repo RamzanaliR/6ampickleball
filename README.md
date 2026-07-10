@@ -1,4 +1,4 @@
-# Dar Pickleball Club — Community App
+# 6AM Pickleball Club — Community App
 
 Next.js (App Router) + Supabase + Tailwind CSS v4. Built in phases — see
 `pickleball-community-app-spec.md` for the full spec this was built from.
@@ -134,6 +134,34 @@ chunk of work on its own; a URL field gets the same "post a photo" outcome
 today; wiring up Storage is a clean, isolated upgrade later without
 touching anything else.
 
+## Post-launch tweaks
+
+Changes made after all 6 phases were built:
+
+- **Rebranded** from "Dar Pickleball Club" to **6AM Pickleball Club**,
+  using the real club logo (`app/icon.png`, `app/apple-icon.png`,
+  `app/favicon.ico`, `public/logo.png` in the nav) instead of the
+  placeholder paddle-and-ball glyph.
+- **Admin can add a member directly** (`/admin/players/new`) instead of
+  waiting for someone to sign up themselves — enter a name and email, the
+  system creates their account with a generated password and approves them
+  immediately (no pending queue). The password is shown once, with a
+  "Copy for WhatsApp" button, matching how you actually reach people.
+
+  **This needs a new secret**: `SUPABASE_SERVICE_ROLE_KEY`, in
+  `.env.local` (see `.env.local.example`) and later in Vercel's env vars.
+  Find it in Supabase under Project Settings → API → service_role key.
+  Creating a user directly (rather than through normal signup) requires
+  Supabase's admin API, which only works with this key — never the public
+  anon key. It's used in exactly one place, `lib/supabase/admin.ts`, only
+  from server actions, and is never sent to the browser.
+
+  **Known gap:** there's no self-service "change my password" yet, so a
+  member added this way keeps the generated password until you build that
+  (or reset it for them manually in Supabase). Flagging it now rather than
+  pretending it's handled — happy to add it if you want it before this
+  goes out to real members.
+
 ## Setup
 
 1. **Create a Supabase project** at [supabase.com](https://supabase.com).
@@ -142,7 +170,9 @@ touching anything else.
    `supabase/phase4_matches.sql`, `supabase/phase5_payments_attendance.sql`,
    then `supabase/phase6_feed.sql`.
 3. **Env vars.** Copy `.env.local.example` to `.env.local` and fill in your
-   project's URL + anon key (Project Settings → API).
+   project's URL, anon key, and service role key (all under Project
+   Settings → API — the service role key is needed for Admin → Players →
+   Add member).
 4. **Install & run:**
    ```bash
    npm install

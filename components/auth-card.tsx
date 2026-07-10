@@ -10,7 +10,7 @@ export function AuthCard({
   return (
     <div className="mx-auto flex min-h-[calc(100vh-160px)] max-w-md flex-col justify-center px-6 py-16">
       <p className="font-[family-name:var(--font-mono)] text-xs uppercase tracking-widest text-[var(--color-court)]">
-        Dar Pickleball Club
+        6AM Pickleball Club
       </p>
       <h1 className="mt-2 font-[family-name:var(--font-display)] text-4xl font-extrabold uppercase tracking-tight text-[var(--color-ink)]">
         {title}

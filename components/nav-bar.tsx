@@ -1,10 +1,10 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { LogoMark } from "@/components/logo-mark";
 
 type NavUser = {
   name: string;
@@ -39,10 +39,17 @@ export function NavBar({ user }: { user: NavUser }) {
   return (
     <header className="kitchen-line sticky top-0 z-40 bg-[var(--color-paper)]/95 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-        <Link href="/" className="flex items-center gap-2" onClick={() => setOpen(false)}>
-          <LogoMark className="h-8 w-8" />
+        <Link href="/" className="flex items-center gap-2.5" onClick={() => setOpen(false)}>
+          <Image
+            src="/logo.png"
+            alt="6AM Pickleball Club"
+            width={40}
+            height={40}
+            className="h-10 w-10"
+            priority
+          />
           <span className="font-[family-name:var(--font-display)] text-xl font-bold uppercase tracking-wide text-[var(--color-ink)]">
-            Dar Pickleball
+            6AM Pickleball Club
           </span>
         </Link>
 

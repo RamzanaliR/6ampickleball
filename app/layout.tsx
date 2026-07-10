@@ -6,7 +6,7 @@ import "./globals.css";
 import { Nav } from "@/components/nav";
 
 export const metadata: Metadata = {
-  title: "Dar Pickleball Club",
+  title: "6AM Pickleball Club",
   description: "Sessions, standings, and results for the community.",
 };
 
@@ -21,7 +21,7 @@ export default function RootLayout({
         <Nav />
         <main className="flex-1">{children}</main>
         <footer className="kitchen-line border-t-0 px-6 py-8 text-sm text-[var(--color-ink-muted)] font-[family-name:var(--font-mono)]">
-          Dar Pickleball Club · built for the community
+          6AM Pickleball Club · built for the community
         </footer>
       </body>
     </html>
