@@ -44,7 +44,7 @@ export default function SignupPage() {
         <p className="text-sm text-[var(--color-ink)]">
           Check <span className="font-medium">{email}</span> for a confirmation
           link. Once confirmed, an admin still needs to approve your account
-          before you can RSVP to sessions.
+          before you can say I&apos;m in for sessions.
         </p>
       </AuthCard>
     );

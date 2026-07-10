@@ -31,7 +31,7 @@ export default async function AdminSessionsPage() {
 
   const { data: sessions } = await supabase
     .from("sessions")
-    .select("id, title, date_time, location, capacity, status")
+    .select("id, title, date_time, location, capacity, courts, status")
     .order("date_time", { ascending: false });
 
   return (
@@ -66,6 +66,7 @@ export default async function AdminSessionsPage() {
                     <p className="text-sm text-[var(--color-ink-muted)]">
                       {formatSessionDate(s.date_time)} · {formatSessionTime(s.date_time)} ·{" "}
                       {s.location} · cap {s.capacity}
+                      {s.courts ? ` · ${s.courts} courts` : ""}
                     </p>
                   </div>
                   <div className="flex items-center gap-4">
@@ -74,6 +75,12 @@ export default async function AdminSessionsPage() {
                     >
                       {s.status}
                     </span>
+                    <Link
+                      href={`/admin/sessions/${s.id}/fixtures`}
+                      className="text-sm font-medium text-[var(--color-ink)] hover:text-[var(--color-court)]"
+                    >
+                      Fixtures
+                    </Link>
                     <Link
                       href={`/admin/sessions/${s.id}/attendance`}
                       className="text-sm font-medium text-[var(--color-ink)] hover:text-[var(--color-court)]"

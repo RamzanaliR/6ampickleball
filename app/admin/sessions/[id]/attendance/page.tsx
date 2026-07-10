@@ -36,7 +36,12 @@ export default async function SessionAttendancePage({
   if (!session) notFound();
 
   const [{ data: roster }, { data: rsvps }, { data: attendance }] = await Promise.all([
-    supabase.from("players").select("id, name").eq("status", "approved").order("name"),
+    supabase
+      .from("players")
+      .select("id, name")
+      .eq("status", "approved")
+      .eq("is_guest", false)
+      .order("name"),
     supabase.from("rsvps").select("player_id").eq("session_id", id).eq("status", "confirmed"),
     supabase.from("attendance").select("player_id").eq("session_id", id),
   ]);
@@ -44,7 +49,18 @@ export default async function SessionAttendancePage({
   const confirmedIds = new Set((rsvps ?? []).map((r) => r.player_id));
   const attendedIds = new Set((attendance ?? []).map((a) => a.player_id));
 
-  const sorted = [...(roster ?? [])].sort((a, b) => {
+  // Guests only ever show up for the specific session they were added to,
+  // not the general roster — pull in anyone confirmed here who isn't
+  // already a regular approved member.
+  const rosterIds = new Set((roster ?? []).map((p) => p.id));
+  const missingGuestIds = [...confirmedIds].filter((pid) => !rosterIds.has(pid));
+  const { data: sessionGuests } = missingGuestIds.length
+    ? await supabase.from("players").select("id, name").in("id", missingGuestIds)
+    : { data: [] as { id: string; name: string }[] };
+
+  const combined = [...(roster ?? []), ...(sessionGuests ?? [])];
+
+  const sorted = [...combined].sort((a, b) => {
     const aRank = confirmedIds.has(a.id) ? 0 : 1;
     const bRank = confirmedIds.has(b.id) ? 0 : 1;
     if (aRank !== bRank) return aRank - bRank;
@@ -75,7 +91,7 @@ export default async function SessionAttendancePage({
                   <div>
                     <p className="font-medium text-[var(--color-ink)]">{p.name}</p>
                     {confirmedIds.has(p.id) && (
-                      <p className="text-xs text-[var(--color-court)]">RSVP&apos;d</p>
+                      <p className="text-xs text-[var(--color-court)]">I&apos;m in</p>
                     )}
                   </div>
                   <AttendanceCheckbox

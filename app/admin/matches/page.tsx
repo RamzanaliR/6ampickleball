@@ -27,6 +27,7 @@ export default async function AdminMatchesPage() {
     .from("matches")
     .select("id, session_id, team_a, team_b, sets, winning_team, submitted_by, created_at")
     .eq("verified", false)
+    .eq("source", "manual")
     .order("created_at", { ascending: true });
 
   const sessionIds = [...new Set((matches ?? []).map((m) => m.session_id))];

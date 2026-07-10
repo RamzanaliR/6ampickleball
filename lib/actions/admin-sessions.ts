@@ -29,9 +29,14 @@ function readSessionFields(formData: FormData) {
   const time = String(formData.get("time") ?? "");
   const location = String(formData.get("location") ?? "").trim();
   const capacity = Number(formData.get("capacity"));
+  const courtsRaw = String(formData.get("courts") ?? "").trim();
+  const courts = courtsRaw ? Number(courtsRaw) : null;
 
   if (!title || !date || !time || !location || !capacity || capacity < 1) {
     return { error: "Fill in every field with a capacity of at least 1." } as const;
+  }
+  if (courts !== null && (Number.isNaN(courts) || courts < 1)) {
+    return { error: "Courts booked must be at least 1, or left blank." } as const;
   }
 
   const dateTime = darDateTimeToISO(date, time);
@@ -39,7 +44,7 @@ function readSessionFields(formData: FormData) {
     return { error: "That date/time doesn't look valid." } as const;
   }
 
-  return { title, dateTime, location, capacity } as const;
+  return { title, dateTime, location, capacity, courts } as const;
 }
 
 export async function createSession(
@@ -62,6 +67,7 @@ export async function createSession(
     date_time: fields.dateTime,
     location: fields.location,
     capacity: fields.capacity,
+    courts: fields.courts,
     created_by: adminId,
   });
 
@@ -94,6 +100,7 @@ export async function updateSession(
       date_time: fields.dateTime,
       location: fields.location,
       capacity: fields.capacity,
+      courts: fields.courts,
     })
     .eq("id", sessionId);
 

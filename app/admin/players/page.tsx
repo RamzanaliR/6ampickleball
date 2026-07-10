@@ -32,6 +32,7 @@ export default async function AdminPlayersPage() {
     .from("players")
     .select("id, name, email, status, role")
     .neq("status", "pending")
+    .eq("is_guest", false)
     .order("name", { ascending: true });
 
   return (

@@ -29,7 +29,7 @@ export default async function EditSessionPage({
 
   const { data: session } = await supabase
     .from("sessions")
-    .select("id, title, date_time, location, capacity")
+    .select("id, title, date_time, location, capacity, courts")
     .eq("id", id)
     .single();
 
@@ -52,6 +52,7 @@ export default async function EditSessionPage({
               time: toDarTimeInputValue(session.date_time),
               location: session.location,
               capacity: session.capacity,
+              courts: session.courts,
             }}
           />
         </div>

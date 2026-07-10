@@ -34,12 +34,12 @@ export function RsvpButton({
 
   const label =
     initialStatus === "confirmed"
-      ? "Cancel RSVP"
+      ? "Cancel"
       : initialStatus === "waitlisted"
         ? "Leave waitlist"
         : full
           ? "Join waitlist"
-          : "RSVP";
+          : "I'm in";
 
   const isCancelStyle = initialStatus !== "none";
 

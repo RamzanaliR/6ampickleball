@@ -1,5 +1,6 @@
 import { formatSessionDate, formatSessionTime } from "@/lib/format";
 import { RsvpButton } from "@/components/rsvp-button";
+import { WhatsAppShareButton } from "@/components/whatsapp-share-button";
 
 type RsvpState = "confirmed" | "waitlisted" | "none";
 
@@ -51,8 +52,15 @@ export function SessionCard({
         </p>
       </div>
 
-      <div className="mt-4">
-        <RsvpButton sessionId={session.id} initialStatus={myStatus} full={full} />
+      <div className="mt-4 flex items-center gap-3">
+        <div className="flex-1">
+          <RsvpButton sessionId={session.id} initialStatus={myStatus} full={full} />
+        </div>
+        <WhatsAppShareButton
+          title={session.title}
+          dateTime={session.date_time}
+          location={session.location}
+        />
       </div>
     </div>
   );

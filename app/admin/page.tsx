@@ -30,7 +30,11 @@ export default async function AdminPage() {
     supabase.from("players").select("id", { count: "exact", head: true }).eq("status", "pending"),
     supabase.from("sessions").select("id", { count: "exact", head: true }).eq("status", "upcoming"),
     supabase.from("players").select("id", { count: "exact", head: true }).eq("status", "approved"),
-    supabase.from("matches").select("id", { count: "exact", head: true }).eq("verified", false),
+    supabase
+      .from("matches")
+      .select("id", { count: "exact", head: true })
+      .eq("verified", false)
+      .eq("source", "manual"),
     supabase.from("payments").select("id", { count: "exact", head: true }).eq("status", "unpaid"),
   ]);
 

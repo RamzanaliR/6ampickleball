@@ -27,7 +27,7 @@ export default async function SessionsPage() {
       <div>
         <PageHeader eyebrow="This week & beyond" title="Sessions" />
         <div className="mx-auto mt-8 max-w-6xl px-6 pb-16">
-          <EmptyState message="Your account needs admin approval before you can RSVP to sessions." />
+          <EmptyState message="Your account needs admin approval before you can say I'm in for sessions." />
         </div>
       </div>
     );
@@ -73,7 +73,7 @@ export default async function SessionsPage() {
       <PageHeader
         eyebrow="This week & beyond"
         title="Sessions"
-        subtitle="RSVP before spots fill — the waitlist kicks in automatically."
+        subtitle="Say I'm in before spots fill — the waitlist kicks in automatically."
       />
       <div className="mx-auto mt-8 max-w-6xl space-y-12 px-6 pb-16">
         <section>

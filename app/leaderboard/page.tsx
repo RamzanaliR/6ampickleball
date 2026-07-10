@@ -9,6 +9,7 @@ export default async function LeaderboardPage() {
     .from("players")
     .select("name, points, wins, losses, skill_tier")
     .eq("status", "approved")
+    .eq("is_guest", false)
     .order("points", { ascending: false });
 
   return (

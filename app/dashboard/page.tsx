@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/page-header";
 import { EmptyState } from "@/components/empty-state";
 import { ProfileForm } from "@/components/profile-form";
+import { ChangePasswordForm } from "@/components/change-password-form";
 import { formatSessionDate, formatSessionTime, formatTZS } from "@/lib/format";
 import type { MatchSet } from "@/lib/types";
 
@@ -25,7 +26,7 @@ export default async function DashboardPage() {
       <div>
         <PageHeader eyebrow="Your dashboard" title="Almost on the roster" />
         <div className="mx-auto mt-8 max-w-6xl px-6 pb-16">
-          <EmptyState message="Your account is waiting on admin approval. You'll be able to RSVP to sessions and see the leaderboard once that's done." />
+          <EmptyState message="Your account is waiting on admin approval. You'll be able to say I'm in for sessions and see the leaderboard once that's done." />
         </div>
       </div>
     );
@@ -91,18 +92,29 @@ export default async function DashboardPage() {
         </div>
 
         <div className="mt-10 grid gap-8 md:grid-cols-2">
-          <section>
-            <h2 className="font-[family-name:var(--font-display)] text-xl font-bold uppercase tracking-tight text-[var(--color-ink)]">
-              Profile
-            </h2>
-            <div className="mt-4 rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-paper-raised)] p-6">
-              <ProfileForm
-                name={player?.name ?? ""}
-                phone={player?.phone ?? null}
-                skillTier={player?.skill_tier ?? null}
-              />
-            </div>
-          </section>
+          <div className="space-y-8">
+            <section>
+              <h2 className="font-[family-name:var(--font-display)] text-xl font-bold uppercase tracking-tight text-[var(--color-ink)]">
+                Profile
+              </h2>
+              <div className="mt-4 rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-paper-raised)] p-6">
+                <ProfileForm
+                  name={player?.name ?? ""}
+                  phone={player?.phone ?? null}
+                  skillTier={player?.skill_tier ?? null}
+                />
+              </div>
+            </section>
+
+            <section>
+              <h2 className="font-[family-name:var(--font-display)] text-xl font-bold uppercase tracking-tight text-[var(--color-ink)]">
+                Password
+              </h2>
+              <div className="mt-4 rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-paper-raised)] p-6">
+                <ChangePasswordForm />
+              </div>
+            </section>
+          </div>
 
           <div className="space-y-8">
             <section>
@@ -111,7 +123,7 @@ export default async function DashboardPage() {
               </h2>
               <div className="mt-4">
                 {!myRsvps || myRsvps.length === 0 ? (
-                  <EmptyState message="No RSVPs yet — head to Sessions to grab a spot." />
+                  <EmptyState message="Nothing yet — head to Sessions and say you're in." />
                 ) : (
                   <div className="overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-paper-raised)]">
                     {myRsvps.map((r, i) => {

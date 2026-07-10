@@ -40,7 +40,7 @@ export default async function AdminPaymentsPage({
 
   const [{ data: payments }, { data: players }, { data: sessions }] = await Promise.all([
     query,
-    supabase.from("players").select("id, name").eq("status", "approved").order("name"),
+    supabase.from("players").select("id, name").eq("status", "approved").eq("is_guest", false).order("name"),
     supabase.from("sessions").select("id, title").order("date_time", { ascending: false }),
   ]);
 

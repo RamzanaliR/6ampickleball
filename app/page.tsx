@@ -6,8 +6,8 @@ const steps = [
     body: "Create an account. An admin reviews and approves new members before you're on the roster.",
   },
   {
-    label: "RSVP",
-    body: "See upcoming sessions, RSVP, and get bumped off the waitlist automatically as spots open.",
+    label: "I'm in",
+    body: "See upcoming sessions, say I'm in, and get bumped off the waitlist automatically as spots open.",
   },
   {
     label: "Play & log",
@@ -35,9 +35,9 @@ export default function Home() {
           Climb the board.
         </h1>
         <p className="mt-6 max-w-xl text-lg text-[var(--color-ink-muted)]">
-          One place for the club to RSVP to sessions, log results, and see
-          who&apos;s actually winning — no more WhatsApp scroll-back to find
-          last week&apos;s score.
+          One place for the club to say I&apos;m in for sessions, log results,
+          and see who&apos;s actually winning — no more WhatsApp scroll-back
+          to find last week&apos;s score.
         </p>
         <div className="mt-8 flex flex-wrap items-center gap-4">
           <Link

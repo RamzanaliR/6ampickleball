@@ -19,6 +19,7 @@ export function SessionForm({
     time: string;
     location: string;
     capacity: number;
+    courts: number | null;
   };
   submitLabel: string;
 }) {
@@ -56,14 +57,24 @@ export function SessionForm({
         placeholder="Oyster Bay Courts"
         required
       />
-      <FormField
-        label="Capacity"
-        name="capacity"
-        type="number"
-        min={1}
-        defaultValue={defaultValues?.capacity}
-        required
-      />
+      <div className="grid grid-cols-2 gap-4">
+        <FormField
+          label="Capacity"
+          name="capacity"
+          type="number"
+          min={1}
+          defaultValue={defaultValues?.capacity}
+          required
+        />
+        <FormField
+          label="Courts booked"
+          name="courts"
+          type="number"
+          min={1}
+          defaultValue={defaultValues?.courts ?? undefined}
+          placeholder="e.g. 4"
+        />
+      </div>
 
       {state.error && (
         <p className="rounded-[var(--radius-input)] bg-[var(--color-danger-bg)] px-3 py-2 text-sm text-[var(--color-danger)]">

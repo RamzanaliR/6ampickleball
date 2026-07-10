@@ -5,7 +5,7 @@ export type PlayerRole = "player" | "admin";
 export interface Player {
   id: string;
   name: string;
-  email: string;
+  email: string | null;
   phone: string | null;
   skill_tier: SkillTier | null;
   points: number;
@@ -13,11 +13,24 @@ export interface Player {
   losses: number;
   status: PlayerStatus;
   role: PlayerRole;
+  is_guest: boolean;
   profile_photo_url: string | null;
   created_at: string;
 }
 
 export type SessionStatus = "upcoming" | "completed" | "cancelled";
+
+export type FixtureScoring = "points" | "no_points";
+export type FixtureRankBy = "wins" | "points";
+export type FixtureTiebreak = "point_diff" | "wins";
+
+export interface FixtureSettings {
+  courts: number;
+  roundMinutesLabel: string; // "8 min" | "10 min" | "12 min" | "15 min" | "No limit"
+  scoring: FixtureScoring;
+  rankBy: FixtureRankBy;
+  tiebreak: FixtureTiebreak;
+}
 
 export interface PickleballSession {
   id: string;
@@ -25,8 +38,10 @@ export interface PickleballSession {
   date_time: string;
   location: string;
   capacity: number;
+  courts: number | null;
   created_by: string;
   status: SessionStatus;
+  fixture_settings: FixtureSettings | null;
 }
 
 export type RsvpStatus = "confirmed" | "waitlisted" | "cancelled";
@@ -52,16 +67,21 @@ export interface MatchSet {
   b: number;
 }
 
+export type MatchSource = "manual" | "fixture";
+
 export interface Match {
   id: string;
   session_id: string;
   team_a: string[];
   team_b: string[];
   sets: MatchSet[];
-  winning_team: "a" | "b";
+  winning_team: "a" | "b" | null;
   verified: boolean;
   submitted_by: string;
   created_at: string;
+  round_number: number | null;
+  court_number: number | null;
+  source: MatchSource;
 }
 
 export type PaymentType = "session_fee" | "membership";

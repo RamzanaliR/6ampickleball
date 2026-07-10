@@ -38,3 +38,28 @@ export async function updateProfile(
   revalidatePath("/dashboard");
   return { success: true };
 }
+
+export type PasswordFormState = { error?: string; success?: boolean };
+
+export async function updatePassword(
+  _prevState: PasswordFormState,
+  formData: FormData
+): Promise<PasswordFormState> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return { error: "Not authenticated" };
+
+  const password = String(formData.get("password") ?? "");
+  const confirmPassword = String(formData.get("confirm_password") ?? "");
+
+  if (password.length < 6) return { error: "Password must be at least 6 characters." };
+  if (password !== confirmPassword) return { error: "Passwords don't match." };
+
+  const { error } = await supabase.auth.updateUser({ password });
+  if (error) return { error: error.message };
+
+  return { success: true };
+}

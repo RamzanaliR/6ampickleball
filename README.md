@@ -156,11 +156,89 @@ Changes made after all 6 phases were built:
   anon key. It's used in exactly one place, `lib/supabase/admin.ts`, only
   from server actions, and is never sent to the browser.
 
-  **Known gap:** there's no self-service "change my password" yet, so a
-  member added this way keeps the generated password until you build that
-  (or reset it for them manually in Supabase). Flagging it now rather than
-  pretending it's handled — happy to add it if you want it before this
-  goes out to real members.
+## Fixture Generator (Classic Robin) + related tweaks
+
+The big addition: admin can generate a full round-robin doubles schedule
+for a session, players get scored live at the courts, and the season
+leaderboard updates automatically from the same matches. Built after a
+long back-and-forth on the actual scheduling rules — see the design notes
+below, since some of the choices aren't obvious from the code alone.
+
+- [x] **"I'm in" replaces RSVP** everywhere — button labels, page copy,
+      badges. (Internal code — variable names, the `rsvps` table, the
+      `RsvpButton` component — kept their original names; only
+      user-facing text changed.)
+- [x] **Self-service password change** (`/dashboard` → Password section),
+      closing the gap flagged in the admin-add-member tweak above.
+- [x] **"Share on WhatsApp" button** on every session card — no messaging
+      infrastructure, just a `wa.me` link pre-filled with the session
+      details. Opens WhatsApp with the message ready to send.
+- [x] **Court count on sessions** — a real field now (session create/edit
+      forms, shown on the admin sessions list), and the default value the
+      fixture generator proposes for that session.
+- [x] **Guest members** — admin can add a guest (new or a returning one,
+      picked from a dropdown) to a specific session. A guest is a real
+      `players` row — plugs into RSVPs, matches, attendance normally —
+      but has no login and is excluded from the season leaderboard and
+      main roster. This needed dropping the foreign key from
+      `players.id` to `auth.users.id`, since a guest has no auth account
+      (see `supabase/phase7_tweaks.sql`).
+- [x] **Any match's score can be corrected after the fact** — not just
+      fixtures. `edit_match_result` reverses the old win/loss/points
+      delta before applying the corrected one, so a fix can't
+      double-count. The admin verification queue's "reject" flow from
+      Phase 4 is unchanged; this is a *new* capability for matches that
+      are already scored and were just entered wrong.
+- [x] **Fixture Generator** (`/admin/sessions/[id]/fixtures`) — the main
+      feature. Classic Robin only (no live/flexible mode — decided
+      against it: partner rotation needs a fixed roster to do properly,
+      and re-deriving it every time someone joins or leaves mid-session
+      added a lot of complexity for a case that turned out not to be
+      needed). Always exactly 10 rounds. Generates real rows in the same
+      `matches` table Phase 4 already built — a fixture match *is* a
+      match, it just arrives with the teams already filled in and a
+      `round_number`/`court_number` for display. Scores are entered
+      live and applied immediately (no separate verification step for
+      fixtures — see "any match can be corrected" above for how mistakes
+      get fixed).
+
+### How the schedule is actually generated
+
+This is the part worth understanding rather than just trusting:
+
+- **Partner rotation uses the classic "circle method"** — the same
+  algorithm used for round-robin tournament scheduling generally (fix
+  one player, rotate the rest). It's a mathematical guarantee of zero
+  repeat partnerships for up to `N-1` rounds, not a best-effort heuristic.
+  At your typical scale (12–26 players), that guarantee comfortably
+  covers all 10 rounds every time — nobody partners with the same person
+  twice in a session. See `generateClassicRobin` in
+  `lib/fixtures/generate-classic-robin.ts`.
+- **It only falls back to randomized search when 2+ players have to sit
+  out every round** (i.e. the court count can't fit everyone even to
+  within one spare) — a fixed pair of "bye slots" would occasionally have
+  to face each other, which the courts don't have room for, so the clean
+  guarantee doesn't cleanly apply there. That fallback still does well in
+  practice (randomized attempts, keeps the best of several tries), just
+  without the same hard guarantee.
+- **Byes rotate fairly** whenever the player count isn't a clean multiple
+  of 4, or exceeds what the booked courts can hold — tracked so nobody
+  sits out twice before everyone's sat out once.
+- **Opponent matching (which pair plays which) is always randomized
+  search**, not deterministic — there's no equivalent clean guarantee for
+  avoiding repeat opponents on top of guaranteed-fresh partners, so it's
+  best-effort (many randomized attempts, keeps the lowest-repeat one).
+- **Two scoreboards come out of the same matches**: the real season
+  leaderboard (already built, untouched — win is +2 points, loss +0),
+  and a same-day standings report specific to that session
+  (`lib/fixtures/standings.ts`), using whatever scoring/rank/tie-break
+  you picked when generating (win=1/loss=0 or no points at all, ranked
+  by wins or points, tied broken by point difference or win count). One
+  set of matches, two views of them.
+- **Round time (8/10/12/15 min, or no limit) is a label only** — shown
+  on the schedule, not a live synced countdown. Simpler build, and
+  nothing stops you from asking for the live version later if the label
+  turns out not to be enough.
 
 ## Setup
 
@@ -168,7 +246,8 @@ Changes made after all 6 phases were built:
 2. **Run the schema.** Open the SQL editor in your Supabase project and run,
    in order: `supabase/schema.sql`, `supabase/phase2_sessions_rsvp.sql`,
    `supabase/phase4_matches.sql`, `supabase/phase5_payments_attendance.sql`,
-   then `supabase/phase6_feed.sql`.
+   `supabase/phase6_feed.sql`, `supabase/phase7_tweaks.sql`, then
+   `supabase/phase8_fixtures.sql`.
 3. **Env vars.** Copy `.env.local.example` to `.env.local` and fill in your
    project's URL, anon key, and service role key (all under Project
    Settings → API — the service role key is needed for Admin → Players →
@@ -195,53 +274,66 @@ app/
   (auth)/login/           sign in
   (auth)/signup/          sign up
   auth/callback/route.ts  email confirmation exchange
-  dashboard/               player dashboard (profile, stats, RSVPs, matches, payments)
-  sessions/                sessions list + RSVP/waitlist
+  dashboard/               player dashboard (profile, password, stats, sessions, matches, payments)
+  sessions/                sessions list + "I'm in"/waitlist
   sessions/[id]/log-match/  submit a match result
   leaderboard/              live standings + tier filter
   feed/                     read-only club announcements
   admin/                    admin overview
   admin/players/             approval queue + roster
+  admin/players/new/           add a member directly
   admin/sessions/             session list + quick actions
   admin/sessions/new/          create session
   admin/sessions/[id]/edit/     edit session
   admin/sessions/[id]/attendance/  per-session attendance checklist
-  admin/matches/               match verification queue
+  admin/sessions/[id]/fixtures/    generate/score fixtures, same-day standings
+  admin/matches/               match verification queue (manual matches only)
   admin/payments/               payments list + filters
   admin/payments/new/            add a charge
   admin/feed/                    post/delete announcements
+  icon.png, apple-icon.png, favicon.ico   club logo, all icon sizes
 lib/
   supabase/client.ts       browser Supabase client
   supabase/server.ts       server Supabase client
   supabase/middleware.ts   session refresh + route protection
-  actions/rsvp.ts           RSVP / cancel server actions
-  actions/profile.ts        profile update server action
-  actions/admin-players.ts   approve/reject server actions
+  supabase/admin.ts         service-role client (admin add-member only)
+  fixtures/generate-classic-robin.ts  the round-robin scheduling algorithm
+  fixtures/standings.ts                same-day standings calculator
+  actions/rsvp.ts           "I'm in" / cancel server actions
+  actions/profile.ts        profile update + password change server actions
+  actions/admin-players.ts   approve/reject/add-member server actions
   actions/admin-sessions.ts  create/update/status server actions
   actions/matches.ts          submit/verify/reject server actions
+  actions/fixtures.ts          generate/score fixture server actions
+  actions/guests.ts             add-guest server action
   actions/attendance.ts        toggle attendance server action
   actions/payments.ts           create charge / toggle paid server actions
   actions/feed.ts                post/delete announcement server actions
   format.ts                  date/time + TZS currency helpers
   types.ts                 shared TS types mirroring the schema
 components/
-  nav.tsx / nav-bar.tsx     responsive nav
+  nav.tsx / nav-bar.tsx     responsive nav (real club logo)
   auth-card.tsx             shared auth form shell
   form-field.tsx             shared text input
   profile-form.tsx           editable profile form
-  session-card.tsx            session card w/ RSVP button
-  rsvp-button.tsx              RSVP/cancel/waitlist button
+  change-password-form.tsx    self-service password change
+  session-card.tsx            session card w/ "I'm in" + WhatsApp share
+  rsvp-button.tsx              "I'm in"/cancel/waitlist button
+  whatsapp-share-button.tsx     wa.me pre-filled share link
   match-form.tsx                singles/doubles result submission form
   leaderboard-table.tsx          filterable standings table
   page-header.tsx           interior page header
   empty-state.tsx            shared empty-state block
-  logo-mark.tsx              paddle + ball glyph
   admin/admin-tabs.tsx        Overview/Players/Sessions/Matches/Payments/Feed sub-nav
   admin/player-approval-row.tsx
-  admin/session-form.tsx        shared create/edit form
+  admin/add-member-form.tsx     create a member account directly
+  admin/session-form.tsx        shared create/edit form (incl. courts)
   admin/session-quick-actions.tsx
   admin/match-verification-row.tsx
   admin/attendance-checkbox.tsx
+  admin/add-guest-form.tsx        add new/returning guest to a session
+  admin/generate-fixtures-form.tsx  fixture settings + generate
+  admin/fixture-match-score-form.tsx  live score entry + edit
   admin/payment-form.tsx
   admin/payment-status-toggle.tsx
   admin/feed-post-form.tsx
@@ -252,6 +344,8 @@ supabase/
   phase4_matches.sql           team-based matches table + verify/reject RPCs
   phase5_payments_attendance.sql  payments/attendance RLS + created_at
   phase6_feed.sql                  community_feed RLS
+  phase7_tweaks.sql                 courts column + guest member support
+  phase8_fixtures.sql                fixture columns + score/edit RPCs
 ```
 
 ## Design tokens
@@ -266,12 +360,19 @@ rather than fetched from Google at build time — see the note in Phase 3.
 
 ## Status
 
-All 6 phases from the original spec are built. Natural next steps if you
-want to keep going (not in the original spec, just ideas):
+All 6 phases from the original spec are built, plus a large post-launch
+addition: the Fixture Generator, guest members, admin add-member, and a
+handful of smaller tweaks (see above). Natural next steps if you want to
+keep going:
 - Real mobile money integration (Selcom/Flutterwave/DPO) — the `payments`
   table's `method` column was designed for this from Phase 1
-- WhatsApp notifications for session reminders / RSVP confirmations
+- WhatsApp *notifications* (automatic reminders) — the share button covers
+  manual sharing; a real reminder system needs the WhatsApp Business API
 - Supabase Storage for feed images and player profile photos, instead of
   URL fields
 - A role-management UI for promoting a second admin (currently SQL-only,
   see Phase 3)
+- Tournaments (bracket-style, fixed partners) — deliberately parked until
+  the Fixture Generator was solid, since they share some DNA (random
+  draws) but need their own data model (fixed teams, brackets, byes for
+  non-power-of-2 entrant counts)
