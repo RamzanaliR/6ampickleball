@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { FormField } from "@/components/form-field";
 import type { SessionFormState } from "@/lib/actions/admin-sessions";
@@ -11,6 +11,7 @@ export function SessionForm({
   action,
   defaultValues,
   submitLabel,
+  tournaments,
 }: {
   action: (prevState: SessionFormState, formData: FormData) => Promise<SessionFormState>;
   defaultValues?: {
@@ -22,10 +23,22 @@ export function SessionForm({
     courts: number | null;
     countsTowardLeaderboard: boolean;
     duprEligible: boolean;
+    tournamentId: string | null;
   };
   submitLabel: string;
+  tournaments: { id: string; name: string }[];
 }) {
   const [state, formAction] = useActionState(action, initialState);
+  const [tournamentId, setTournamentId] = useState(defaultValues?.tournamentId ?? "");
+  const [addToLeaderboard, setAddToLeaderboard] = useState(
+    defaultValues?.countsTowardLeaderboard ?? true
+  );
+  const inTournament = tournamentId !== "";
+
+  function handleTournamentChange(value: string) {
+    setTournamentId(value);
+    if (value) setAddToLeaderboard(false);
+  }
 
   return (
     <form action={formAction} className="space-y-4">
@@ -78,19 +91,43 @@ export function SessionForm({
         />
       </div>
 
+      {tournaments.length > 0 && (
+        <label className="block">
+          <span className="text-sm font-medium text-[var(--color-ink)]">
+            Part of a tournament?
+          </span>
+          <select
+            name="tournament_id"
+            value={tournamentId}
+            onChange={(e) => handleTournamentChange(e.target.value)}
+            className="mt-1.5 w-full rounded-[var(--radius-input)] border border-[var(--color-line)] bg-[var(--color-paper)] px-3.5 py-2.5 text-[var(--color-ink)] outline-none focus:border-[var(--color-court)]"
+          >
+            <option value="">No — regular session</option>
+            {tournaments.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+
       <div className="space-y-2 rounded-[var(--radius-input)] border border-[var(--color-line)] p-4">
         <label className="flex items-start gap-2.5">
           <input
             type="checkbox"
             name="counts_toward_leaderboard"
-            defaultChecked={defaultValues?.countsTowardLeaderboard ?? true}
-            className="mt-0.5 h-4 w-4 accent-[var(--color-court)]"
+            checked={inTournament ? false : addToLeaderboard}
+            onChange={(e) => setAddToLeaderboard(e.target.checked)}
+            disabled={inTournament}
+            className="mt-0.5 h-4 w-4 accent-[var(--color-court)] disabled:opacity-50"
           />
           <span className="text-sm text-[var(--color-ink)]">
             Add to leaderboard
             <span className="block text-xs text-[var(--color-ink-muted)]">
-              Uncheck for a session that shouldn&apos;t count toward the season leaderboard
-              (e.g. a tournament). Players will see this on the session.
+              {inTournament
+                ? "Off and locked — tournament sessions never count toward the season leaderboard."
+                : "Uncheck for a session that shouldn't count toward the season leaderboard. Players will see this on the session."}
             </span>
           </span>
         </label>

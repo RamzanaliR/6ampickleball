@@ -319,6 +319,43 @@ This is the part worth understanding rather than just trusting:
       anytime via the profile modal, shown as a column in the admin
       roster table (now a real `<table>`, not just stacked rows).
 
+## Tournaments
+
+Built as proposed rather than as a parallel system: **a tournament is a
+named group of ordinary sessions**, not new scheduling machinery.
+
+- A tournament (`/admin/tournaments/new`) has a name, date range, and its
+  own scoring/rank-by/tie-break settings — the same choices as a single
+  session's fixture settings, just applied to the whole event's cumulative
+  standings rather than one week.
+- **Registered players** (`tournament_entries`) are the 24-30 person pool
+  eligible for that tournament. Each week is still a normal session that
+  people RSVP to individually — capacity 24, existing waitlist logic
+  unchanged — but `rsvp_to_session` was extended with one more check: if
+  the session belongs to a tournament, only players registered for *that*
+  tournament can RSVP to it.
+- **Every weekly session is a completely normal session** — created the
+  same way, fixtures generated with the same Classic Robin algorithm,
+  scored live the same way. The only difference is it's tagged with a
+  `tournament_id`. From "Admin → Tournaments → [event] → Create this
+  week's session," the new-session form opens pre-filled with that
+  tournament and capacity 24.
+- **Never touches the season leaderboard, as a hard guarantee, not a
+  default.** Tagging a session to a tournament forces
+  `counts_toward_leaderboard` to `false` server-side — the checkbox is
+  disabled and shown locked in the UI, and there's no path (re-checking
+  it, editing later) that lets a tournament session sneak onto the season
+  standings.
+- **Cumulative standings** reuse the exact same aggregation
+  (`lib/fixtures/standings.ts`, renamed from `computeSameDayStandings` to
+  `computeStandings` since it no longer only means one day — it just sums
+  whatever matches it's given) — fed every match across every session
+  tagged to the tournament instead of one session's matches. Same
+  `SessionStandingsTable` component, same PF/PA/PD.
+- Player-facing (`/tournaments`) mirrors the admin view minus the
+  management controls: cumulative standings, the list of weekly sessions
+  (linking into each one's fixtures the normal way), and who's registered.
+
 ## Setup
 
 1. **Create a Supabase project** at [supabase.com](https://supabase.com).
@@ -328,8 +365,9 @@ This is the part worth understanding rather than just trusting:
    `supabase/phase6_feed.sql`, `supabase/phase7_tweaks.sql`,
    `supabase/phase8_fixtures.sql`, `supabase/phase9_scoring_change.sql`,
    `supabase/phase10_feed_moderation.sql`,
-   `supabase/phase11_fixture_visibility.sql`, then
-   `supabase/phase12_leaderboard_opt_out_dupr_delete.sql`.
+   `supabase/phase11_fixture_visibility.sql`,
+   `supabase/phase12_leaderboard_opt_out_dupr_delete.sql`, then
+   `supabase/phase13_tournaments.sql`.
 3. **Env vars.** Copy `.env.local.example` to `.env.local` and fill in your
    project's URL, anon key, and service role key (all under Project
    Settings → API — the service role key is needed for Admin → Players →
@@ -362,6 +400,8 @@ app/
   sessions/[id]/log-match/  submit a match result
   leaderboard/              live standings (GP/W/L/Points) + tier filter
   players/[id]/              any player's public stats + match history
+  tournaments/                tournament list
+  tournaments/[id]/             cumulative standings, weekly sessions, roster
   feed/                     read + compose club announcements (pending review)
   admin/                    admin overview
   admin/players/             approval queue + roster
@@ -372,6 +412,9 @@ app/
   admin/sessions/[id]/attendance/  per-session attendance checklist
   admin/sessions/[id]/fixtures/    generate/score fixtures, 2-col standings+rounds
   admin/matches/               match verification queue (manual matches only)
+  admin/tournaments/            tournament list
+  admin/tournaments/new/          create tournament
+  admin/tournaments/[id]/          entries, cumulative standings, weekly sessions
   admin/payments/               payments list + filters
   admin/payments/new/            add a charge
   admin/feed/                    direct-post form + pending-review moderation queue
@@ -393,6 +436,7 @@ lib/
   actions/attendance.ts        toggle attendance server action
   actions/payments.ts           create charge / toggle paid server actions
   actions/feed.ts                post (admin/player) / moderate / delete
+  actions/tournaments.ts          create tournament, add/remove entries
   format.ts                  date/time + TZS currency helpers
   types.ts                 shared TS types mirroring the schema
 components/
@@ -431,6 +475,9 @@ components/
   admin/feed-post-form.tsx        admin's direct-post form
   admin/feed-post-row.tsx          published post row + delete
   admin/feed-moderation-row.tsx     pending post row + approve/reject
+  admin/tournament-form.tsx           create tournament
+  admin/add-tournament-entry-form.tsx   register a player
+  admin/tournament-entry-row.tsx         registered player row + remove
 supabase/
   schema.sql                 tables, trigger, RLS foundation
   phase2_sessions_rsvp.sql    sessions/rsvps RLS + RSVP RPC functions
@@ -443,6 +490,7 @@ supabase/
   phase10_feed_moderation.sql          feed status column + open posting
   phase11_fixture_visibility.sql        fixture schedule visible to all players
   phase12_leaderboard_opt_out_dupr_delete.sql  leaderboard opt-out, DUPR, safe delete
+  phase13_tournaments.sql                       tournaments + entries + RSVP eligibility
 ```
 
 ## Design tokens
@@ -469,7 +517,7 @@ keep going:
   URL fields
 - A role-management UI for promoting a second admin (currently SQL-only,
   see Phase 3)
-- Tournaments (bracket-style, fixed partners) — deliberately parked until
-  the Fixture Generator was solid, since they share some DNA (random
-  draws) but need their own data model (fixed teams, brackets, byes for
-  non-power-of-2 entrant counts)
+- Bracket-style tournaments (single/double elimination, fixed partners) —
+  the round-robin format is built (see Tournaments above); brackets are a
+  genuinely different data model (fixed teams, elimination rounds, byes
+  for non-power-of-2 entrant counts) and would be a separate addition

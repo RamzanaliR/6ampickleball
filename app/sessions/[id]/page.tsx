@@ -6,7 +6,7 @@ import { RsvpButton } from "@/components/rsvp-button";
 import { FixtureRoundNavigator } from "@/components/fixture-round-navigator";
 import { SessionStandingsTable } from "@/components/session-standings-table";
 import { ReadOnlyMatchCard } from "@/components/read-only-match-card";
-import { computeSameDayStandings, sortStandings } from "@/lib/fixtures/standings";
+import { computeStandings, sortStandings } from "@/lib/fixtures/standings";
 import { formatSessionDate, formatSessionTime } from "@/lib/format";
 import type { FixtureSettings, MatchSet } from "@/lib/types";
 
@@ -92,7 +92,7 @@ export default async function SessionDetailPage({
 
   const standingsRows = settings
     ? sortStandings(
-        [...computeSameDayStandings(matches, settings.scoring).values()],
+        [...computeStandings(matches, settings.scoring).values()],
         settings.rankBy,
         settings.tiebreak
       )

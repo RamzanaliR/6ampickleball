@@ -31,7 +31,14 @@ function readSessionFields(formData: FormData) {
   const capacity = Number(formData.get("capacity"));
   const courtsRaw = String(formData.get("courts") ?? "").trim();
   const courts = courtsRaw ? Number(courtsRaw) : null;
-  const countsTowardLeaderboard = formData.get("counts_toward_leaderboard") === "on";
+  const tournamentId = String(formData.get("tournament_id") ?? "").trim() || null;
+  // Tournament sessions never count toward the season leaderboard — this
+  // is enforced here, not just defaulted in the UI, so there's no path
+  // (re-checking the box, editing later) that lets a tournament session
+  // sneak onto the season standings.
+  const countsTowardLeaderboard = tournamentId
+    ? false
+    : formData.get("counts_toward_leaderboard") === "on";
   const duprEligible = formData.get("dupr_eligible") === "on";
 
   if (!title || !date || !time || !location || !capacity || capacity < 1) {
@@ -54,6 +61,7 @@ function readSessionFields(formData: FormData) {
     courts,
     countsTowardLeaderboard,
     duprEligible,
+    tournamentId,
   } as const;
 }
 
@@ -80,6 +88,7 @@ export async function createSession(
     courts: fields.courts,
     counts_toward_leaderboard: fields.countsTowardLeaderboard,
     dupr_eligible: fields.duprEligible,
+    tournament_id: fields.tournamentId,
     created_by: adminId,
   });
 
@@ -115,6 +124,7 @@ export async function updateSession(
       courts: fields.courts,
       counts_toward_leaderboard: fields.countsTowardLeaderboard,
       dupr_eligible: fields.duprEligible,
+      tournament_id: fields.tournamentId,
     })
     .eq("id", sessionId);
 

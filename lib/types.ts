@@ -33,6 +33,19 @@ export interface FixtureSettings {
   tiebreak: FixtureTiebreak;
 }
 
+export interface Tournament {
+  id: string;
+  name: string;
+  start_date: string;
+  end_date: string;
+  format: "round_robin";
+  scoring: FixtureScoring;
+  rank_by: FixtureRankBy;
+  tiebreak: FixtureTiebreak;
+  created_by: string;
+  created_at: string;
+}
+
 export interface PickleballSession {
   id: string;
   title: string;
@@ -45,6 +58,7 @@ export interface PickleballSession {
   fixture_settings: FixtureSettings | null;
   counts_toward_leaderboard: boolean;
   dupr_eligible: boolean;
+  tournament_id: string | null;
 }
 
 export type RsvpStatus = "confirmed" | "waitlisted" | "cancelled";

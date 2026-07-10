@@ -8,7 +8,7 @@ import { AddGuestForm } from "@/components/admin/add-guest-form";
 import { FixtureMatchScoreForm } from "@/components/admin/fixture-match-score-form";
 import { FixtureRoundNavigator } from "@/components/fixture-round-navigator";
 import { SessionStandingsTable } from "@/components/session-standings-table";
-import { computeSameDayStandings, sortStandings } from "@/lib/fixtures/standings";
+import { computeStandings, sortStandings } from "@/lib/fixtures/standings";
 import type { FixtureSettings, MatchSet } from "@/lib/types";
 
 export default async function SessionFixturesPage({
@@ -88,7 +88,7 @@ export default async function SessionFixturesPage({
 
   const standingsRows = settings
     ? sortStandings(
-        [...computeSameDayStandings(matches, settings.scoring).values()],
+        [...computeStandings(matches, settings.scoring).values()],
         settings.rankBy,
         settings.tiebreak
       )

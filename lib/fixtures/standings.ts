@@ -17,7 +17,14 @@ interface StandingsInputMatch {
   verified: boolean;
 }
 
-export function computeSameDayStandings(
+/**
+ * Aggregates a list of matches into per-player standings. Used both
+ * for a single session's same-day standings and for a tournament's
+ * cumulative standings across every session tagged to it — the
+ * function itself doesn't care about session boundaries, it just
+ * sums whatever matches it's given.
+ */
+export function computeStandings(
   matches: StandingsInputMatch[],
   scoring: FixtureScoring
 ): Map<string, StandingsRow> {

@@ -27,11 +27,16 @@ export default async function EditSessionPage({
 
   if (me?.role !== "admin") redirect("/dashboard");
 
-  const { data: session } = await supabase
-    .from("sessions")
-    .select("id, title, date_time, location, capacity, courts, counts_toward_leaderboard, dupr_eligible")
-    .eq("id", id)
-    .single();
+  const [{ data: session }, { data: tournaments }] = await Promise.all([
+    supabase
+      .from("sessions")
+      .select(
+        "id, title, date_time, location, capacity, courts, counts_toward_leaderboard, dupr_eligible, tournament_id"
+      )
+      .eq("id", id)
+      .single(),
+    supabase.from("tournaments").select("id, name").order("start_date", { ascending: false }),
+  ]);
 
   if (!session) notFound();
 
@@ -46,6 +51,7 @@ export default async function EditSessionPage({
           <SessionForm
             action={boundUpdate}
             submitLabel="Save changes"
+            tournaments={tournaments ?? []}
             defaultValues={{
               title: session.title,
               date: toDarDateInputValue(session.date_time),
@@ -55,6 +61,7 @@ export default async function EditSessionPage({
               courts: session.courts,
               countsTowardLeaderboard: session.counts_toward_leaderboard,
               duprEligible: session.dupr_eligible,
+              tournamentId: session.tournament_id,
             }}
           />
         </div>

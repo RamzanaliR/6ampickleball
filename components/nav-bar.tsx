@@ -15,6 +15,7 @@ type NavUser = {
 const baseLinks = [
   { href: "/sessions", label: "Sessions" },
   { href: "/leaderboard", label: "Leaderboard" },
+  { href: "/tournaments", label: "Tournaments" },
   { href: "/feed", label: "Feed" },
 ];
 
