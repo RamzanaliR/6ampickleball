@@ -62,11 +62,36 @@ locking themselves out):
 update public.players set role = 'admin' where email = 'someone@example.com';
 ```
 
+## Phase 4 — Match results + leaderboard ✅
+
+- [x] Log a result (`/sessions/[id]/log-match`) — available once a session
+      is marked completed. Pick singles or doubles, pick players, enter
+      1–3 set scores; the winning side is derived from the sets, not picked
+      by hand, so the score and the result can't contradict each other
+- [x] Verification queue (`/admin/matches`) — admin verifies or rejects each
+      submitted result; verifying is what actually applies points (a win is
+      +2 points and a win added to the player's record, a loss is +0 points
+      and a loss added — see `verify_match` in `supabase/phase4_matches.sql`)
+- [x] Leaderboard now reflects real results automatically (no extra wiring
+      needed — it already read `points`/`wins`/`losses` off `players`), plus
+      an optional skill-tier filter
+- [x] Dashboard shows real match history — opponent, set scores from your
+      own side's perspective, and a Pending/Win/Loss badge
+
+**Design decision worth knowing about:** the original spec's `matches` table
+had a single `player_ids` array and one `winner_id`, which doesn't cleanly
+express doubles (2 vs 2). `supabase/phase4_matches.sql` replaces it with
+`team_a` / `team_b` arrays (1 player for singles, 2 for doubles) and a
+`winning_team` ('a' or 'b'). It also adds a `sets` jsonb column
+(`[{"a":11,"b":7}, ...]`) instead of a free-text score, since structured
+scores are what let the winning side be computed instead of hand-picked.
+
 ## Setup
 
 1. **Create a Supabase project** at [supabase.com](https://supabase.com).
 2. **Run the schema.** Open the SQL editor in your Supabase project and run,
-   in order: `supabase/schema.sql`, then `supabase/phase2_sessions_rsvp.sql`.
+   in order: `supabase/schema.sql`, `supabase/phase2_sessions_rsvp.sql`,
+   then `supabase/phase4_matches.sql`.
 3. **Env vars.** Copy `.env.local.example` to `.env.local` and fill in your
    project's URL + anon key (Project Settings → API).
 4. **Install & run:**
@@ -91,14 +116,16 @@ app/
   (auth)/login/           sign in
   (auth)/signup/          sign up
   auth/callback/route.ts  email confirmation exchange
-  dashboard/               player dashboard (profile, stats, my RSVPs)
+  dashboard/               player dashboard (profile, stats, RSVPs, match history)
   sessions/                sessions list + RSVP/waitlist
-  leaderboard/              live standings
+  sessions/[id]/log-match/  submit a match result
+  leaderboard/              live standings + tier filter
   admin/                    admin overview
   admin/players/             approval queue + roster
   admin/sessions/             session list + quick actions
   admin/sessions/new/          create session
   admin/sessions/[id]/edit/     edit session
+  admin/matches/               match verification queue
 lib/
   supabase/client.ts       browser Supabase client
   supabase/server.ts       server Supabase client
@@ -107,6 +134,7 @@ lib/
   actions/profile.ts        profile update server action
   actions/admin-players.ts   approve/reject server actions
   actions/admin-sessions.ts  create/update/status server actions
+  actions/matches.ts          submit/verify/reject server actions
   format.ts                  date/time helpers, pinned to Africa/Dar_es_Salaam
   types.ts                 shared TS types mirroring the schema
 components/
@@ -116,16 +144,20 @@ components/
   profile-form.tsx           editable profile form
   session-card.tsx            session card w/ RSVP button
   rsvp-button.tsx              RSVP/cancel/waitlist button
+  match-form.tsx                singles/doubles result submission form
+  leaderboard-table.tsx          filterable standings table
   page-header.tsx           interior page header
   empty-state.tsx            shared empty-state block
   logo-mark.tsx              paddle + ball glyph
-  admin/admin-tabs.tsx        Overview/Players/Sessions sub-nav
+  admin/admin-tabs.tsx        Overview/Players/Sessions/Matches sub-nav
   admin/player-approval-row.tsx
   admin/session-form.tsx        shared create/edit form
   admin/session-quick-actions.tsx
+  admin/match-verification-row.tsx
 supabase/
   schema.sql                 tables, trigger, RLS foundation
   phase2_sessions_rsvp.sql    sessions/rsvps RLS + RSVP RPC functions
+  phase4_matches.sql           team-based matches table + verify/reject RPCs
 ```
 
 ## Design tokens
@@ -140,6 +172,5 @@ rather than fetched from Google at build time — see the note in Phase 3.
 
 ## Next phases
 
-- **Phase 4** — match submission + verification, leaderboard scoring rules
 - **Phase 5** — payment tracking UI, attendance log
 - **Phase 6** — community feed, notifications, polish pass

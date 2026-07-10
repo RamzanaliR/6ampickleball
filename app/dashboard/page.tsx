@@ -4,6 +4,7 @@ import { PageHeader } from "@/components/page-header";
 import { EmptyState } from "@/components/empty-state";
 import { ProfileForm } from "@/components/profile-form";
 import { formatSessionDate, formatSessionTime } from "@/lib/format";
+import type { MatchSet } from "@/lib/types";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -37,6 +38,30 @@ export default async function DashboardPage() {
     .in("status", ["confirmed", "waitlisted"])
     .eq("sessions.status", "upcoming")
     .order("date_time", { referencedTable: "sessions", ascending: true });
+
+  const { data: myMatches } = await supabase
+    .from("matches")
+    .select("id, session_id, team_a, team_b, sets, winning_team, verified, created_at")
+    .or(`team_a.cs.{${user.id}},team_b.cs.{${user.id}}`)
+    .order("created_at", { ascending: false })
+    .limit(10);
+
+  const matchSessionIds = [...new Set((myMatches ?? []).map((m) => m.session_id))];
+  const matchPlayerIds = [
+    ...new Set((myMatches ?? []).flatMap((m) => [...m.team_a, ...m.team_b])),
+  ];
+
+  const [{ data: matchSessions }, { data: matchPlayers }] = await Promise.all([
+    matchSessionIds.length
+      ? supabase.from("sessions").select("id, title, date_time").in("id", matchSessionIds)
+      : Promise.resolve({ data: [] as { id: string; title: string; date_time: string }[] }),
+    matchPlayerIds.length
+      ? supabase.from("players").select("id, name").in("id", matchPlayerIds)
+      : Promise.resolve({ data: [] as { id: string; name: string }[] }),
+  ]);
+
+  const matchSessionById = new Map((matchSessions ?? []).map((s) => [s.id, s]));
+  const matchPlayerNameById = new Map((matchPlayers ?? []).map((p) => [p.id, p.name]));
 
   return (
     <div>
@@ -110,7 +135,61 @@ export default async function DashboardPage() {
                 Match history
               </h2>
               <div className="mt-4">
-                <EmptyState message="Match submission and results land in Phase 4." />
+                {!myMatches || myMatches.length === 0 ? (
+                  <EmptyState message="No matches logged yet — results show up here once you play a session." />
+                ) : (
+                  <div className="overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-paper-raised)]">
+                    {myMatches.map((m, i) => {
+                      const onTeamA = m.team_a.includes(user.id);
+                      const opponentIds = onTeamA ? m.team_b : m.team_a;
+                      const opponentNames =
+                        opponentIds
+                          .map((id: string) => matchPlayerNameById.get(id) ?? "Unknown")
+                          .join(" & ") || "Unknown";
+                      const session = matchSessionById.get(m.session_id);
+                      const setsLabel = (m.sets as MatchSet[])
+                        .map((s) => (onTeamA ? `${s.a}-${s.b}` : `${s.b}-${s.a}`))
+                        .join(", ");
+                      const iWon =
+                        (onTeamA && m.winning_team === "a") ||
+                        (!onTeamA && m.winning_team === "b");
+
+                      return (
+                        <div
+                          key={m.id}
+                          className={`flex items-center justify-between px-5 py-4 ${
+                            i !== myMatches.length - 1 ? "kitchen-line" : ""
+                          }`}
+                        >
+                          <div>
+                            <p className="font-medium text-[var(--color-ink)]">
+                              vs {opponentNames}
+                            </p>
+                            <p className="font-[family-name:var(--font-mono)] text-sm text-[var(--color-ink-muted)]">
+                              {setsLabel}
+                              {session ? ` · ${formatSessionDate(session.date_time)}` : ""}
+                            </p>
+                          </div>
+                          {!m.verified ? (
+                            <span className="shrink-0 rounded-[var(--radius-pill)] border border-[var(--color-ball)] bg-[var(--color-ball)]/30 px-3 py-1 text-xs font-semibold text-[var(--color-ink)]">
+                              Pending
+                            </span>
+                          ) : (
+                            <span
+                              className={
+                                iWon
+                                  ? "shrink-0 rounded-[var(--radius-pill)] bg-[var(--color-court)] px-3 py-1 text-xs font-semibold text-white"
+                                  : "shrink-0 rounded-[var(--radius-pill)] border border-[var(--color-line)] px-3 py-1 text-xs font-semibold text-[var(--color-ink-muted)]"
+                              }
+                            >
+                              {iWon ? "Win" : "Loss"}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </section>
           </div>

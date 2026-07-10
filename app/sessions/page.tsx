@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/page-header";
 import { EmptyState } from "@/components/empty-state";
@@ -119,9 +120,17 @@ export default async function SessionsPage() {
                     <p className="font-medium text-[var(--color-ink)]">{s.title}</p>
                     <p className="text-sm text-[var(--color-ink-muted)]">{s.location}</p>
                   </div>
-                  <p className="font-[family-name:var(--font-mono)] text-sm text-[var(--color-ink-muted)]">
-                    {formatSessionDate(s.date_time)}
-                  </p>
+                  <div className="flex items-center gap-4">
+                    <p className="font-[family-name:var(--font-mono)] text-sm text-[var(--color-ink-muted)]">
+                      {formatSessionDate(s.date_time)}
+                    </p>
+                    <Link
+                      href={`/sessions/${s.id}/log-match`}
+                      className="text-sm font-medium text-[var(--color-court)] hover:text-[var(--color-court-dark)]"
+                    >
+                      Log result
+                    </Link>
+                  </div>
                 </div>
               ))}
             </div>

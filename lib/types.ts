@@ -47,14 +47,21 @@ export interface Attendance {
   checked_in_at: string;
 }
 
+export interface MatchSet {
+  a: number;
+  b: number;
+}
+
 export interface Match {
   id: string;
   session_id: string;
-  player_ids: string[];
-  score: string;
-  winner_id: string | null;
+  team_a: string[];
+  team_b: string[];
+  sets: MatchSet[];
+  winning_team: "a" | "b";
   verified: boolean;
   submitted_by: string;
+  created_at: string;
 }
 
 export type PaymentType = "session_fee" | "membership";

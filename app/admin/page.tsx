@@ -20,12 +20,17 @@ export default async function AdminPage() {
 
   if (player?.role !== "admin") redirect("/dashboard");
 
-  const [{ count: pendingCount }, { count: upcomingCount }, { count: rosterCount }] =
-    await Promise.all([
-      supabase.from("players").select("id", { count: "exact", head: true }).eq("status", "pending"),
-      supabase.from("sessions").select("id", { count: "exact", head: true }).eq("status", "upcoming"),
-      supabase.from("players").select("id", { count: "exact", head: true }).eq("status", "approved"),
-    ]);
+  const [
+    { count: pendingCount },
+    { count: upcomingCount },
+    { count: rosterCount },
+    { count: pendingMatchCount },
+  ] = await Promise.all([
+    supabase.from("players").select("id", { count: "exact", head: true }).eq("status", "pending"),
+    supabase.from("sessions").select("id", { count: "exact", head: true }).eq("status", "upcoming"),
+    supabase.from("players").select("id", { count: "exact", head: true }).eq("status", "approved"),
+    supabase.from("matches").select("id", { count: "exact", head: true }).eq("verified", false),
+  ]);
 
   return (
     <div>
@@ -33,7 +38,7 @@ export default async function AdminPage() {
       <div className="mx-auto mt-8 max-w-6xl px-6 pb-16">
         <AdminTabs active="/admin" />
 
-        <div className="mt-6 grid gap-4 md:grid-cols-3">
+        <div className="mt-6 grid gap-4 md:grid-cols-4">
           <StatCard
             label="Pending approvals"
             value={pendingCount ?? 0}
@@ -45,6 +50,11 @@ export default async function AdminPage() {
             href="/admin/sessions"
           />
           <StatCard label="Approved players" value={rosterCount ?? 0} href="/admin/players" />
+          <StatCard
+            label="Results to verify"
+            value={pendingMatchCount ?? 0}
+            href="/admin/matches"
+          />
         </div>
       </div>
     </div>
