@@ -172,11 +172,13 @@ export default async function SessionFixturesPage({
             </section>
           </div>
         ) : (
-          <div className="mt-6 grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]">
+          <div className="mt-6 grid gap-8 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.3fr)]">
             <section>
-              <h2 className="font-[family-name:var(--font-display)] text-xl font-bold uppercase tracking-tight text-[var(--color-ink)]">
-                Today&apos;s standings
-              </h2>
+              <div className="flex h-9 items-center">
+                <h2 className="font-[family-name:var(--font-display)] text-xl font-bold uppercase tracking-tight text-[var(--color-ink)]">
+                  Today&apos;s standings
+                </h2>
+              </div>
               <div className="mt-4">
                 {settings && standingsRows.length > 0 ? (
                   <SessionStandingsTable
@@ -191,17 +193,11 @@ export default async function SessionFixturesPage({
             </section>
 
             <section>
-              <h2 className="font-[family-name:var(--font-display)] text-xl font-bold uppercase tracking-tight text-[var(--color-ink)]">
-                Rounds
-                {settings && (
-                  <span className="ml-2 font-[family-name:var(--font-mono)] text-sm font-normal normal-case text-[var(--color-ink-muted)]">
-                    {settings.roundMinutesLabel}
-                  </span>
-                )}
-              </h2>
-              <div className="mt-4">
-                <FixtureRoundNavigator rounds={roundsContent} />
-              </div>
+              <FixtureRoundNavigator
+                title="Rounds"
+                subtitle={settings?.roundMinutesLabel}
+                rounds={roundsContent}
+              />
             </section>
           </div>
         )}

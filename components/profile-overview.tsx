@@ -7,11 +7,13 @@ import { ChangePasswordForm } from "@/components/change-password-form";
 
 export function ProfileOverview({
   name,
+  nickname,
   phone,
   skillTier,
   duprId,
 }: {
   name: string;
+  nickname: string | null;
   phone: string | null;
   skillTier: string | null;
   duprId: string | null;
@@ -22,6 +24,7 @@ export function ProfileOverview({
     <>
       <div className="space-y-3">
         <Row label="Name" value={name} />
+        <Row label="Nickname" value={nickname ?? "Not set"} />
         <Row label="Phone" value={phone ?? "Not set"} />
         <Row label="Skill tier" value={skillTier ?? "Not set"} />
         <Row label="DUPR ID" value={duprId ?? "Not set"} />
@@ -36,7 +39,13 @@ export function ProfileOverview({
 
       <Modal open={open} onClose={() => setOpen(false)} title="Edit profile">
         <div className="space-y-8">
-          <ProfileForm name={name} phone={phone} skillTier={skillTier} duprId={duprId} />
+          <ProfileForm
+            name={name}
+            nickname={nickname}
+            phone={phone}
+            skillTier={skillTier}
+            duprId={duprId}
+          />
           <div className="kitchen-line pt-6">
             <h3 className="mb-4 font-[family-name:var(--font-display)] text-lg font-bold uppercase tracking-tight text-[var(--color-ink)]">
               Password

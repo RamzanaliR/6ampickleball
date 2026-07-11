@@ -11,15 +11,15 @@ const tabs = [
 
 export function AdminTabs({ active }: { active: string }) {
   return (
-    <div className="kitchen-line -mx-6 flex gap-6 overflow-x-auto px-6 pb-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+    <div className="kitchen-line flex flex-wrap gap-x-6 gap-y-3 pb-4">
       {tabs.map((tab) => (
         <Link
           key={tab.href}
           href={tab.href}
           className={
             tab.href === active
-              ? "shrink-0 whitespace-nowrap text-sm font-semibold text-[var(--color-court)]"
-              : "shrink-0 whitespace-nowrap text-sm font-medium text-[var(--color-ink-muted)] transition-colors hover:text-[var(--color-court)]"
+              ? "text-sm font-semibold text-[var(--color-court)]"
+              : "text-sm font-medium text-[var(--color-ink-muted)] transition-colors hover:text-[var(--color-court)]"
           }
         >
           {tab.label}

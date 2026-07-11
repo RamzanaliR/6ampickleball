@@ -4,7 +4,7 @@ import { PageHeader } from "@/components/page-header";
 import { EmptyState } from "@/components/empty-state";
 import { FeedAddPostButton } from "@/components/feed-add-post-button";
 import { FeedGalleryList, type FeedListPost } from "@/components/feed-post-card";
-import { formatSessionDate } from "@/lib/format";
+import { formatSessionDate, displayName } from "@/lib/format";
 import type { FeedMediaItem } from "@/lib/types";
 
 export default async function FeedPage() {
@@ -41,9 +41,9 @@ export default async function FeedPage() {
 
   const posterIds = [...new Set((posts ?? []).map((p) => p.posted_by))];
   const { data: posters } = posterIds.length
-    ? await supabase.from("players").select("id, name").in("id", posterIds)
+    ? await supabase.from("players").select("id, name, nickname").in("id", posterIds)
     : { data: [] as { id: string; name: string }[] };
-  const posterNameById = new Map((posters ?? []).map((p) => [p.id, p.name]));
+  const posterNameById = new Map((posters ?? []).map((p) => [p.id, displayName(p)]));
 
   const listPosts: FeedListPost[] = (posts ?? []).map((post) => {
     const media: FeedMediaItem[] =

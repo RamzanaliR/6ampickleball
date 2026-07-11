@@ -17,7 +17,7 @@ export default async function LeaderboardPage() {
       <PageHeader
         eyebrow="Standings"
         title="Leaderboard"
-        subtitle="A win is worth 2 points, a loss 0 — updated as soon as an admin verifies a result."
+        subtitle="A win is worth 1 point, a loss 0 — updated as soon as an admin verifies a result."
       />
       <div className="mx-auto mt-8 max-w-6xl px-6 pb-16">
         {!players || players.length === 0 ? (

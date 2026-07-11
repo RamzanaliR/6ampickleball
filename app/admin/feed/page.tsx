@@ -4,7 +4,7 @@ import { PageHeader } from "@/components/page-header";
 import { AdminTabs } from "@/components/admin/admin-tabs";
 import { EmptyState } from "@/components/empty-state";
 import { FeedModerationRow } from "@/components/admin/feed-moderation-row";
-import { formatSessionDate } from "@/lib/format";
+import { formatSessionDate, displayName } from "@/lib/format";
 import type { FeedMediaItem } from "@/lib/types";
 
 export default async function AdminFeedPage() {
@@ -31,9 +31,9 @@ export default async function AdminFeedPage() {
 
   const posterIds = [...new Set((pending ?? []).map((p) => p.posted_by))];
   const { data: posters } = posterIds.length
-    ? await supabase.from("players").select("id, name").in("id", posterIds)
+    ? await supabase.from("players").select("id, name, nickname").in("id", posterIds)
     : { data: [] as { id: string; name: string }[] };
-  const posterNameById = new Map((posters ?? []).map((p) => [p.id, p.name]));
+  const posterNameById = new Map((posters ?? []).map((p) => [p.id, displayName(p)]));
 
   return (
     <div>

@@ -19,6 +19,7 @@ export async function updateProfile(
   if (!user) return { error: "Not authenticated" };
 
   const name = String(formData.get("name") ?? "").trim();
+  const nickname = String(formData.get("nickname") ?? "").trim();
   const phone = String(formData.get("phone") ?? "").trim();
   const skillTier = String(formData.get("skill_tier") ?? "");
   const duprId = String(formData.get("dupr_id") ?? "").trim();
@@ -29,6 +30,7 @@ export async function updateProfile(
     .from("players")
     .update({
       name,
+      nickname: nickname || null,
       phone: phone || null,
       skill_tier: SKILL_TIERS.includes(skillTier) ? skillTier : null,
       dupr_id: duprId || null,
@@ -38,6 +40,8 @@ export async function updateProfile(
   if (error) return { error: error.message };
 
   revalidatePath("/dashboard");
+  revalidatePath("/leaderboard");
+  revalidatePath("/feed");
   return { success: true };
 }
 

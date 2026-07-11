@@ -5,6 +5,7 @@ export type PlayerRole = "player" | "admin";
 export interface Player {
   id: string;
   name: string;
+  nickname: string | null;
   email: string | null;
   phone: string | null;
   skill_tier: SkillTier | null;

@@ -2,7 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/page-header";
 import { MatchHistoryList } from "@/components/match-history-list";
-import { formatSessionDate } from "@/lib/format";
+import { formatSessionDate, displayName } from "@/lib/format";
 import type { MatchSet } from "@/lib/types";
 
 export default async function PlayerProfilePage({
@@ -20,7 +20,7 @@ export default async function PlayerProfilePage({
 
   const { data: player } = await supabase
     .from("players")
-    .select("id, name, skill_tier, dupr_id, points, wins, losses, status, is_guest")
+    .select("id, name, nickname, skill_tier, dupr_id, points, wins, losses, status, is_guest")
     .eq("id", id)
     .single();
 
@@ -42,16 +42,16 @@ export default async function PlayerProfilePage({
       ? supabase.from("sessions").select("id, title, date_time").in("id", sessionIds)
       : Promise.resolve({ data: [] as { id: string; title: string; date_time: string }[] }),
     playerIds.length
-      ? supabase.from("players").select("id, name").in("id", playerIds)
-      : Promise.resolve({ data: [] as { id: string; name: string }[] }),
+      ? supabase.from("players").select("id, name, nickname").in("id", playerIds)
+      : Promise.resolve({ data: [] as { id: string; name: string; nickname: string | null }[] }),
   ]);
 
   const sessionById = new Map((sessions ?? []).map((s) => [s.id, s]));
-  const nameById = new Map((players ?? []).map((p) => [p.id, p.name]));
+  const nameById = new Map((players ?? []).map((p) => [p.id, displayName(p)]));
 
   return (
     <div>
-      <PageHeader eyebrow="Player" title={player.name} />
+      <PageHeader eyebrow="Player" title={displayName(player)} />
       <div className="mx-auto mt-8 max-w-6xl px-6 pb-16">
         <div className="grid gap-4 md:grid-cols-4">
           <StatCard label="Points" value={player.points} />

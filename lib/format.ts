@@ -52,3 +52,15 @@ export function darDateTimeToISO(date: string, time: string) {
 export function formatTZS(amount: number) {
   return `TZS ${new Intl.NumberFormat("en-US").format(amount)}`;
 }
+
+/**
+ * The name shown almost everywhere in the app — a player's nickname
+ * if they've set one, otherwise their full name. The two exceptions
+ * are the global leaderboard and tournament standings, which always
+ * show full legal name and should pass `.name` directly instead of
+ * using this helper.
+ */
+export function displayName(p: { name: string; nickname?: string | null }) {
+  const nick = p.nickname?.trim();
+  return nick ? nick : p.name;
+}

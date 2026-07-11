@@ -8,7 +8,7 @@ import { SessionStandingsTable } from "@/components/session-standings-table";
 import { ReadOnlyMatchCard } from "@/components/read-only-match-card";
 import { ExportMatchesCsvButton } from "@/components/export-matches-csv-button";
 import { computeStandings, sortStandings } from "@/lib/fixtures/standings";
-import { formatSessionDate, formatSessionTime, toDarDateInputValue } from "@/lib/format";
+import { formatSessionDate, formatSessionTime, toDarDateInputValue, displayName } from "@/lib/format";
 import type { FixtureSettings, MatchSet } from "@/lib/types";
 
 export default async function SessionDetailPage({
@@ -26,7 +26,7 @@ export default async function SessionDetailPage({
 
   const { data: player } = await supabase
     .from("players")
-    .select("status")
+    .select("status, role")
     .eq("id", user.id)
     .single();
 
@@ -75,9 +75,10 @@ export default async function SessionDetailPage({
 
   const playerIds = [...new Set(matches.flatMap((m) => [...m.team_a, ...m.team_b]))];
   const { data: playersData } = playerIds.length
-    ? await supabase.from("players").select("id, name, dupr_id").in("id", playerIds)
-    : { data: [] as { id: string; name: string; dupr_id: string | null }[] };
-  const nameById = new Map((playersData ?? []).map((p) => [p.id, p.name]));
+    ? await supabase.from("players").select("id, name, nickname, dupr_id").in("id", playerIds)
+    : { data: [] as { id: string; name: string; nickname: string | null; dupr_id: string | null }[] };
+  const nameById = new Map((playersData ?? []).map((p) => [p.id, displayName(p)]));
+  const legalNameById = new Map((playersData ?? []).map((p) => [p.id, p.name]));
   const duprById = new Map((playersData ?? []).map((p) => [p.id, p.dupr_id]));
   const teamLabel = (ids: string[]) =>
     ids.map((pid) => nameById.get(pid) ?? "Unknown").join(" & ");
@@ -149,24 +150,27 @@ export default async function SessionDetailPage({
           </div>
         )}
 
+        {player?.role === "admin" && hasFixtures && matches.some((m) => (m.sets as MatchSet[]).length > 0) && (
+          <div className="mb-8 flex justify-end">
+            <ExportMatchesCsvButton
+              sessionTitle={session.title}
+              dateLabel={toDarDateInputValue(session.date_time)}
+              matches={matches}
+              nameById={legalNameById}
+              duprById={duprById}
+            />
+          </div>
+        )}
+
         {!hasFixtures ? (
           <EmptyState message="Fixtures haven't been generated for this session yet." />
         ) : (
-          <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]">
+          <div className="grid gap-8 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.3fr)]">
             <section>
-              <div className="flex items-center justify-between gap-3">
+              <div className="flex h-9 items-center">
                 <h2 className="font-[family-name:var(--font-display)] text-xl font-bold uppercase tracking-tight text-[var(--color-ink)]">
                   Standings
                 </h2>
-                {matches.some((m) => (m.sets as MatchSet[]).length > 0) && (
-                  <ExportMatchesCsvButton
-                    sessionTitle={session.title}
-                    dateLabel={toDarDateInputValue(session.date_time)}
-                    matches={matches}
-                    nameById={nameById}
-                    duprById={duprById}
-                  />
-                )}
               </div>
               <div className="mt-4">
                 {settings && standingsRows.length > 0 ? (
@@ -182,17 +186,11 @@ export default async function SessionDetailPage({
             </section>
 
             <section>
-              <h2 className="font-[family-name:var(--font-display)] text-xl font-bold uppercase tracking-tight text-[var(--color-ink)]">
-                Rounds
-                {settings && (
-                  <span className="ml-2 font-[family-name:var(--font-mono)] text-sm font-normal normal-case text-[var(--color-ink-muted)]">
-                    {settings.roundMinutesLabel}
-                  </span>
-                )}
-              </h2>
-              <div className="mt-4">
-                <FixtureRoundNavigator rounds={roundsContent} />
-              </div>
+              <FixtureRoundNavigator
+                title="Rounds"
+                subtitle={settings?.roundMinutesLabel}
+                rounds={roundsContent}
+              />
             </section>
           </div>
         )}

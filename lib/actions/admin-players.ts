@@ -49,6 +49,7 @@ export async function addMember(
   }
 
   const name = String(formData.get("name") ?? "").trim();
+  const nickname = String(formData.get("nickname") ?? "").trim();
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
 
   if (!name) return { error: "Enter a name." };
@@ -61,7 +62,7 @@ export async function addMember(
     email,
     password,
     email_confirm: true,
-    user_metadata: { name },
+    user_metadata: { name, nickname: nickname || undefined },
   });
 
   if (createError || !created.user) {

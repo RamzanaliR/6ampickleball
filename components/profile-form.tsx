@@ -9,11 +9,13 @@ const initialState: ProfileFormState = {};
 
 export function ProfileForm({
   name,
+  nickname,
   phone,
   skillTier,
   duprId,
 }: {
   name: string;
+  nickname: string | null;
   phone: string | null;
   skillTier: string | null;
   duprId: string | null;
@@ -23,6 +25,12 @@ export function ProfileForm({
   return (
     <form action={formAction} className="space-y-4">
       <FormField label="Full name" name="name" defaultValue={name} required />
+      <FormField
+        label="Nickname"
+        name="nickname"
+        defaultValue={nickname ?? ""}
+        placeholder="What should we call you?"
+      />
       <FormField
         label="Phone"
         name="phone"

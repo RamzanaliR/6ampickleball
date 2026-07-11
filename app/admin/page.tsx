@@ -24,12 +24,14 @@ export default async function AdminPage() {
     { count: pendingCount },
     { count: upcomingCount },
     { count: rosterCount },
+    { count: guestCount },
     { count: unpaidCount },
     { count: pendingFeedCount },
   ] = await Promise.all([
     supabase.from("players").select("id", { count: "exact", head: true }).eq("status", "pending"),
     supabase.from("sessions").select("id", { count: "exact", head: true }).eq("status", "upcoming"),
     supabase.from("players").select("id", { count: "exact", head: true }).eq("status", "approved"),
+    supabase.from("players").select("id", { count: "exact", head: true }).eq("is_guest", true),
     supabase.from("payments").select("id", { count: "exact", head: true }).eq("status", "unpaid"),
     supabase
       .from("community_feed")
@@ -55,6 +57,7 @@ export default async function AdminPage() {
             href="/admin/sessions"
           />
           <StatCard label="Approved players" value={rosterCount ?? 0} href="/admin/players" />
+          <StatCard label="Guest players" value={guestCount ?? 0} href="/admin/players" />
           <StatCard
             label="Unpaid dues"
             value={unpaidCount ?? 0}

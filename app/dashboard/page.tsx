@@ -5,7 +5,7 @@ import { PageHeader } from "@/components/page-header";
 import { EmptyState } from "@/components/empty-state";
 import { ProfileOverview } from "@/components/profile-overview";
 import { MatchHistoryList } from "@/components/match-history-list";
-import { formatSessionDate, formatSessionTime, formatTZS } from "@/lib/format";
+import { formatSessionDate, formatSessionTime, formatTZS, displayName } from "@/lib/format";
 import type { MatchSet } from "@/lib/types";
 
 export default async function DashboardPage() {
@@ -18,7 +18,7 @@ export default async function DashboardPage() {
 
   const { data: player } = await supabase
     .from("players")
-    .select("name, phone, status, skill_tier, dupr_id, points, wins, losses")
+    .select("name, nickname, phone, status, skill_tier, dupr_id, points, wins, losses")
     .eq("id", user.id)
     .single();
 
@@ -58,12 +58,14 @@ export default async function DashboardPage() {
       ? supabase.from("sessions").select("id, title, date_time").in("id", matchSessionIds)
       : Promise.resolve({ data: [] as { id: string; title: string; date_time: string }[] }),
     matchPlayerIds.length
-      ? supabase.from("players").select("id, name").in("id", matchPlayerIds)
+      ? supabase.from("players").select("id, name, nickname").in("id", matchPlayerIds)
       : Promise.resolve({ data: [] as { id: string; name: string }[] }),
   ]);
 
   const matchSessionById = new Map((matchSessions ?? []).map((s) => [s.id, s]));
-  const matchPlayerNameById = new Map((matchPlayers ?? []).map((p) => [p.id, p.name]));
+  const matchPlayerNameById = new Map(
+    (matchPlayers ?? []).map((p) => [p.id, displayName(p)])
+  );
 
   const { data: myPayments } = await supabase
     .from("payments")
@@ -83,7 +85,7 @@ export default async function DashboardPage() {
     <div>
       <PageHeader
         eyebrow="Your dashboard"
-        title={`Hey, ${player?.name?.split(" ")[0] ?? "there"}`}
+        title={`Hey, ${(player ? displayName(player) : "").split(" ")[0] || "there"}`}
       />
       <div className="mx-auto mt-8 max-w-6xl px-6 pb-16">
         <div className="grid grid-cols-3 divide-x divide-[var(--color-line)] overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-paper-raised)]">
@@ -143,6 +145,7 @@ export default async function DashboardPage() {
             <div className="mt-4 rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-paper-raised)] p-6">
               <ProfileOverview
                 name={player?.name ?? ""}
+                nickname={player?.nickname ?? null}
                 phone={player?.phone ?? null}
                 skillTier={player?.skill_tier ?? null}
                 duprId={player?.dupr_id ?? null}

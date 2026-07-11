@@ -7,6 +7,7 @@ import { AuthCard, FormField } from "@/components/auth-card";
 
 export default function SignupPage() {
   const [name, setName] = useState("");
+  const [nickname, setNickname] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [duprId, setDuprId] = useState("");
@@ -24,7 +25,7 @@ export default function SignupPage() {
       email,
       password,
       options: {
-        data: { name, dupr_id: duprId || undefined },
+        data: { name, nickname: nickname || undefined, dupr_id: duprId || undefined },
         emailRedirectTo: `${window.location.origin}/auth/callback`,
       },
     });
@@ -61,6 +62,15 @@ export default function SignupPage() {
           value={name}
           onChange={(e) => setName(e.target.value)}
           autoComplete="name"
+        />
+        <FormField
+          label="Nickname"
+          type="text"
+          required
+          value={nickname}
+          onChange={(e) => setNickname(e.target.value)}
+          placeholder="What should we call you?"
+          autoComplete="nickname"
         />
         <FormField
           label="Email"

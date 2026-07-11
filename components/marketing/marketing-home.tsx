@@ -50,7 +50,7 @@ export async function MarketingHome() {
               "linear-gradient(0deg, color-mix(in srgb, var(--color-court-dark) 92%, black) 0%, color-mix(in srgb, var(--color-court-dark) 75%, transparent) 45%, transparent 85%)",
           }}
         />
-        <div className="relative mx-auto w-full max-w-6xl px-6 pb-16 pt-32">
+        <div className="relative mx-auto w-full max-w-6xl px-6 pb-10 pt-20 sm:pb-16 sm:pt-32">
           <p className="font-[family-name:var(--font-mono)] text-sm uppercase tracking-widest text-[var(--color-ball)]">
             6AM Pickleball Club • Dar es Salaam
           </p>
@@ -59,21 +59,21 @@ export async function MarketingHome() {
             <br />
             before the city wake up
           </h1>
-          <p className="mt-6 max-w-xl text-lg text-white/80">
+          <p className="mt-4 max-w-xl text-sm text-white/80 sm:mt-6 sm:text-lg">
             A Dar es Salaam pickleball family that starts the day together —
             early mornings, good rallies, and friendships that outlast the
             session.
           </p>
-          <div className="mt-8 flex flex-wrap items-center gap-4">
+          <div className="mt-6 flex flex-nowrap items-center gap-2 sm:mt-8 sm:gap-4">
             <Link
               href="/signup"
-              className="rounded-[var(--radius-pill)] bg-[var(--color-court)] px-6 py-3 text-base font-semibold text-white transition-colors hover:bg-[var(--color-court-dark)]"
+              className="whitespace-nowrap rounded-[var(--radius-pill)] bg-[var(--color-court)] px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-[var(--color-court-dark)] sm:px-6 sm:py-3 sm:text-base"
             >
               Request to join
             </Link>
             <Link
               href="#events"
-              className="rounded-[var(--radius-pill)] border border-white/40 px-6 py-3 text-base font-medium text-white transition-colors hover:border-white hover:bg-white/10"
+              className="whitespace-nowrap rounded-[var(--radius-pill)] border border-white/40 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:border-white hover:bg-white/10 sm:px-6 sm:py-3 sm:text-base"
             >
               See what we&apos;re about
             </Link>

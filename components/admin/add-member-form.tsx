@@ -62,6 +62,7 @@ export function AddMemberForm({
   return (
     <form action={formAction} className="space-y-4">
       <FormField label="Full name" name="name" required />
+      <FormField label="Nickname (optional)" name="nickname" placeholder="What should we call them?" />
       <FormField label="Email" name="email" type="email" required />
 
       {state.error && (
