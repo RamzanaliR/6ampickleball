@@ -18,7 +18,7 @@ export default async function DashboardPage() {
 
   const { data: player } = await supabase
     .from("players")
-    .select("name, nickname, phone, status, skill_tier, dupr_id, points, wins, losses")
+    .select("name, nickname, phone, status, dupr_id, points, wins, losses")
     .eq("id", user.id)
     .single();
 
@@ -147,7 +147,6 @@ export default async function DashboardPage() {
                 name={player?.name ?? ""}
                 nickname={player?.nickname ?? null}
                 phone={player?.phone ?? null}
-                skillTier={player?.skill_tier ?? null}
                 duprId={player?.dupr_id ?? null}
               />
             </div>

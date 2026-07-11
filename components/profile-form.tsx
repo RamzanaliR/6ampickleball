@@ -11,13 +11,11 @@ export function ProfileForm({
   name,
   nickname,
   phone,
-  skillTier,
   duprId,
 }: {
   name: string;
   nickname: string | null;
   phone: string | null;
-  skillTier: string | null;
   duprId: string | null;
 }) {
   const [state, formAction] = useActionState(updateProfile, initialState);
@@ -38,19 +36,6 @@ export function ProfileForm({
         defaultValue={phone ?? ""}
         placeholder="+255 …"
       />
-      <label className="block">
-        <span className="text-sm font-medium text-[var(--color-ink)]">Skill tier</span>
-        <select
-          name="skill_tier"
-          defaultValue={skillTier ?? ""}
-          className="mt-1.5 w-full rounded-[var(--radius-input)] border border-[var(--color-line)] bg-[var(--color-paper)] px-3.5 py-2.5 text-[var(--color-ink)] outline-none transition-colors focus:border-[var(--color-court)]"
-        >
-          <option value="">Not set</option>
-          <option value="beginner">Beginner</option>
-          <option value="intermediate">Intermediate</option>
-          <option value="advanced">Advanced</option>
-        </select>
-      </label>
       <FormField
         label="DUPR ID"
         name="dupr_id"

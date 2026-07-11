@@ -5,8 +5,6 @@ import { createClient } from "@/lib/supabase/server";
 
 export type ProfileFormState = { error?: string; success?: boolean };
 
-const SKILL_TIERS = ["beginner", "intermediate", "advanced"];
-
 export async function updateProfile(
   _prevState: ProfileFormState,
   formData: FormData
@@ -21,7 +19,6 @@ export async function updateProfile(
   const name = String(formData.get("name") ?? "").trim();
   const nickname = String(formData.get("nickname") ?? "").trim();
   const phone = String(formData.get("phone") ?? "").trim();
-  const skillTier = String(formData.get("skill_tier") ?? "");
   const duprId = String(formData.get("dupr_id") ?? "").trim();
 
   if (!name) return { error: "Name is required" };
@@ -32,7 +29,6 @@ export async function updateProfile(
       name,
       nickname: nickname || null,
       phone: phone || null,
-      skill_tier: SKILL_TIERS.includes(skillTier) ? skillTier : null,
       dupr_id: duprId || null,
     })
     .eq("id", user.id);
