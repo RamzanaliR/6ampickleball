@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { formatSessionDate } from "@/lib/format";
@@ -33,32 +34,30 @@ export async function MarketingHome() {
 
   return (
     <div>
-      {/* Hero — full-bleed layout (Option A). The background is a flat
-          warm gradient standing in for a real club photo. To swap in a
-          real photo: drop the file in /public (e.g. /public/hero.jpg)
-          and replace the `background` value below with
-          `url('/hero.jpg') center/cover no-repeat`. Keep the dark
-          overlay gradient layered on top for text contrast. */}
+      {/* Hero — full-bleed layout (Option A) with the real club photo.
+          To swap the photo later: replace /public/hero.jpg (keep the
+          same filename), or update the url() below. */}
       <section
         className="relative flex min-h-[520px] items-end overflow-hidden md:min-h-[640px]"
         style={{
-          background:
-            "linear-gradient(180deg, color-mix(in srgb, var(--color-court) 55%, white 25%) 0%, var(--color-court) 40%, var(--color-court-dark) 100%)",
+          background: "url('/hero.jpg') center/cover no-repeat",
         }}
       >
         <div
           className="pointer-events-none absolute inset-0"
           style={{
             background:
-              "linear-gradient(0deg, rgba(12,26,18,0.85) 0%, rgba(12,26,18,0.35) 55%, rgba(12,26,18,0) 100%)",
+              "linear-gradient(0deg, color-mix(in srgb, var(--color-court-dark) 92%, black) 0%, color-mix(in srgb, var(--color-court-dark) 75%, transparent) 45%, transparent 85%)",
           }}
         />
-        <div className="relative mx-auto max-w-6xl px-6 pb-16 pt-32">
+        <div className="relative mx-auto w-full max-w-6xl px-6 pb-16 pt-32">
           <p className="font-[family-name:var(--font-mono)] text-sm uppercase tracking-widest text-[var(--color-ball)]">
-            Dar es Salaam · community court
+            6AM Pickleball Club • Dar es Salaam
           </p>
           <h1 className="mt-4 max-w-2xl font-[family-name:var(--font-display)] text-4xl font-extrabold uppercase leading-[1.05] tracking-tight text-white md:text-6xl">
-            Where the court opens before the city wakes up
+            When the courts opens
+            <br />
+            before the city wake up
           </h1>
           <p className="mt-6 max-w-xl text-lg text-white/80">
             A Dar es Salaam pickleball family that starts the day together —
@@ -103,12 +102,18 @@ export async function MarketingHome() {
 
           <div id="chairperson" className="scroll-mt-24 rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-paper)] p-6">
             <div className="flex items-center gap-4">
-              <div className="h-14 w-14 shrink-0 rounded-full bg-[var(--color-paper-raised)]" />
+              <Image
+                src="/chairperson-amin-ladha.jpg"
+                alt="Amin Ladha"
+                width={56}
+                height={56}
+                className="h-14 w-14 shrink-0 rounded-full object-cover"
+              />
               <div>
                 <p className="font-[family-name:var(--font-mono)] text-xs uppercase tracking-widest text-[var(--color-court)]">
                   A word from our chairperson
                 </p>
-                <p className="font-semibold text-[var(--color-ink)]">[Chairperson name]</p>
+                <p className="font-semibold text-[var(--color-ink)]">Amin Ladha</p>
               </div>
             </div>
             {/* Placeholder quote — replace with the real message. */}
