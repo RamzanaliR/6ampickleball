@@ -19,6 +19,17 @@ const baseLinks = [
   { href: "/feed", label: "The Club" },
 ];
 
+// Anchors into the one-page marketing site (app/page.tsx for visitors,
+// app/welcome for signed-in users via the logo) — signed-out visitors
+// get this instead of the app nav.
+const marketingLinks = [
+  { href: "/#about", label: "About" },
+  { href: "/#chairperson", label: "Chairperson" },
+  { href: "/#how-it-works", label: "How it works" },
+  { href: "/#events", label: "Events" },
+  { href: "/#stats", label: "By the numbers" },
+];
+
 export function NavBar({ user }: { user: NavUser }) {
   const [open, setOpen] = useState(false);
   const router = useRouter();
@@ -28,6 +39,10 @@ export function NavBar({ user }: { user: NavUser }) {
     ...baseLinks,
     ...(user?.role === "admin" ? [{ href: "/admin", label: "Admin" }] : []),
   ];
+
+  // Signed-in: logo always goes to the marketing one-pager (not "/",
+  // which redirects signed-in visitors straight to /dashboard).
+  const logoHref = user ? "/welcome" : "/";
 
   async function handleSignOut() {
     const supabase = createClient();
@@ -40,7 +55,7 @@ export function NavBar({ user }: { user: NavUser }) {
   return (
     <header className="kitchen-line sticky top-0 z-40 bg-[var(--color-paper)]/95 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-        <Link href="/" className="flex items-center gap-2.5" onClick={() => setOpen(false)}>
+        <Link href={logoHref} className="flex items-center gap-2.5" onClick={() => setOpen(false)}>
           <Image
             src="/logo.png"
             alt="6AM Pickleball Club"
@@ -56,16 +71,15 @@ export function NavBar({ user }: { user: NavUser }) {
 
         {/* Desktop nav */}
         <nav className="hidden items-center gap-8 md:flex">
-          {user &&
-            links.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="text-sm font-medium text-[var(--color-ink-muted)] transition-colors hover:text-[var(--color-court)]"
-              >
-                {link.label}
-              </Link>
-            ))}
+          {(user ? links : marketingLinks).map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className="text-sm font-medium text-[var(--color-ink-muted)] transition-colors hover:text-[var(--color-court)]"
+            >
+              {link.label}
+            </Link>
+          ))}
           {user ? (
             <button
               onClick={handleSignOut}
@@ -113,25 +127,23 @@ export function NavBar({ user }: { user: NavUser }) {
       {/* Mobile menu */}
       {open && (
         <nav className="kitchen-line flex flex-col gap-1 px-6 pb-6 md:hidden">
+          {(user ? links : marketingLinks).map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              onClick={() => setOpen(false)}
+              className="py-3 text-base font-medium text-[var(--color-ink)]"
+            >
+              {link.label}
+            </Link>
+          ))}
           {user ? (
-            <>
-              {links.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  onClick={() => setOpen(false)}
-                  className="py-3 text-base font-medium text-[var(--color-ink)]"
-                >
-                  {link.label}
-                </Link>
-              ))}
-              <button
-                onClick={handleSignOut}
-                className="py-3 text-left text-base font-medium text-[var(--color-danger)]"
-              >
-                Sign out
-              </button>
-            </>
+            <button
+              onClick={handleSignOut}
+              className="py-3 text-left text-base font-medium text-[var(--color-danger)]"
+            >
+              Sign out
+            </button>
           ) : (
             <>
               <Link
