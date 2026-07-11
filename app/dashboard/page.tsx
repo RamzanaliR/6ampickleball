@@ -85,147 +85,146 @@ export default async function DashboardPage() {
         title={`Hey, ${player?.name?.split(" ")[0] ?? "there"}`}
       />
       <div className="mx-auto mt-8 max-w-6xl px-6 pb-16">
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid grid-cols-3 divide-x divide-[var(--color-line)] overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-paper-raised)]">
           <StatCard label="Points" value={player?.points ?? 0} />
           <StatCard label="Wins" value={player?.wins ?? 0} />
           <StatCard label="Losses" value={player?.losses ?? 0} />
         </div>
 
-        <div className="mt-10 grid gap-8 md:grid-cols-2">
-          <div className="space-y-8">
-            <section>
-              <h2 className="font-[family-name:var(--font-display)] text-xl font-bold uppercase tracking-tight text-[var(--color-ink)]">
-                Profile
-              </h2>
-              <div className="mt-4 rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-paper-raised)] p-6">
-                <ProfileOverview
-                  name={player?.name ?? ""}
-                  phone={player?.phone ?? null}
-                  skillTier={player?.skill_tier ?? null}
-                  duprId={player?.dupr_id ?? null}
-                />
-              </div>
-            </section>
-          </div>
-
-          <div className="space-y-8">
-            <section>
-              <h2 className="font-[family-name:var(--font-display)] text-xl font-bold uppercase tracking-tight text-[var(--color-ink)]">
-                Your upcoming sessions
-              </h2>
-              <div className="mt-4">
-                {!myRsvps || myRsvps.length === 0 ? (
-                  <EmptyState message="Nothing yet — head to Sessions and say you're in." />
-                ) : (
-                  <div className="overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-paper-raised)]">
-                    {myRsvps.map((r, i) => {
-                      const session = Array.isArray(r.sessions) ? r.sessions[0] : r.sessions;
-                      if (!session) return null;
-                      return (
-                        <div
-                          key={session.id}
-                          className={`flex items-center justify-between px-5 py-4 ${
-                            i !== myRsvps.length - 1 ? "kitchen-line" : ""
-                          }`}
-                        >
-                          <div>
-                            <p className="font-medium text-[var(--color-ink)]">{session.title}</p>
-                            <p className="text-sm text-[var(--color-ink-muted)]">
-                              {formatSessionDate(session.date_time)} ·{" "}
-                              {formatSessionTime(session.date_time)}
-                            </p>
-                          </div>
-                          {r.status === "waitlisted" && (
-                            <span className="shrink-0 rounded-[var(--radius-pill)] border border-[var(--color-ball)] bg-[var(--color-ball)]/30 px-3 py-1 text-xs font-semibold text-[var(--color-ink)]">
-                              Waitlisted
-                            </span>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            </section>
-
-            <section>
-              <h2 className="font-[family-name:var(--font-display)] text-xl font-bold uppercase tracking-tight text-[var(--color-ink)]">
-                Payments
-              </h2>
-              <div className="mt-4">
-                {!myPayments || myPayments.length === 0 ? (
-                  <EmptyState message="No charges on your account." />
-                ) : (
-                  <div className="overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-paper-raised)]">
-                    {myPayments.map((p, i) => (
+        {/* Source order = mobile stacking order (Upcoming, Profile, Match history, Payments).
+            md:grid-cols-2 turns this into a 2x2 layout on larger screens with no extra
+            order overrides needed. */}
+        <div className="mt-8 flex flex-col gap-8 md:grid md:grid-cols-2">
+          <section>
+            <h2 className="font-[family-name:var(--font-display)] text-xl font-bold uppercase tracking-tight text-[var(--color-ink)]">
+              Your upcoming sessions
+            </h2>
+            <div className="mt-4">
+              {!myRsvps || myRsvps.length === 0 ? (
+                <EmptyState message="Nothing yet — head to Sessions and say you're in." />
+              ) : (
+                <div className="overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-paper-raised)]">
+                  {myRsvps.map((r, i) => {
+                    const session = Array.isArray(r.sessions) ? r.sessions[0] : r.sessions;
+                    if (!session) return null;
+                    return (
                       <div
-                        key={p.id}
+                        key={session.id}
                         className={`flex items-center justify-between px-5 py-4 ${
-                          i !== myPayments.length - 1 ? "kitchen-line" : ""
+                          i !== myRsvps.length - 1 ? "kitchen-line" : ""
                         }`}
                       >
                         <div>
-                          <p className="font-medium text-[var(--color-ink)]">
-                            {p.type === "session_fee"
-                              ? (paymentSessionTitleById.get(p.session_id ?? "") ?? "Session fee")
-                              : `Membership · ${p.period}`}
-                          </p>
-                          <p className="font-[family-name:var(--font-mono)] text-sm text-[var(--color-ink-muted)]">
-                            {formatTZS(p.amount)}
+                          <p className="font-medium text-[var(--color-ink)]">{session.title}</p>
+                          <p className="text-sm text-[var(--color-ink-muted)]">
+                            {formatSessionDate(session.date_time)} ·{" "}
+                            {formatSessionTime(session.date_time)}
                           </p>
                         </div>
-                        <span
-                          className={
-                            p.status === "paid"
-                              ? "shrink-0 rounded-[var(--radius-pill)] bg-[var(--color-court)] px-3 py-1 text-xs font-semibold text-white"
-                              : "shrink-0 rounded-[var(--radius-pill)] border border-[var(--color-ball)] bg-[var(--color-ball)]/30 px-3 py-1 text-xs font-semibold text-[var(--color-ink)]"
-                          }
-                        >
-                          {p.status === "paid" ? "Paid" : "Due"}
-                        </span>
+                        {r.status === "waitlisted" && (
+                          <span className="shrink-0 rounded-[var(--radius-pill)] border border-[var(--color-ball)] bg-[var(--color-ball)]/30 px-3 py-1 text-xs font-semibold text-[var(--color-ink)]">
+                            Waitlisted
+                          </span>
+                        )}
                       </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </section>
-
-            <section>
-              <h2 className="font-[family-name:var(--font-display)] text-xl font-bold uppercase tracking-tight text-[var(--color-ink)]">
-                Match history
-              </h2>
-              <div className="mt-4">
-                <MatchHistoryList
-                  items={(myMatches ?? []).map((m) => {
-                    const onTeamA = m.team_a.includes(user.id);
-                    const opponentIds = onTeamA ? m.team_b : m.team_a;
-                    const opponentLabel =
-                      opponentIds
-                        .map((pid: string) => matchPlayerNameById.get(pid) ?? "Unknown")
-                        .join(" & ") || "Unknown";
-                    const session = matchSessionById.get(m.session_id);
-                    const setsLabel = (m.sets as MatchSet[])
-                      .map((s) => (onTeamA ? `${s.a}-${s.b}` : `${s.b}-${s.a}`))
-                      .join(", ");
-                    const iWon =
-                      (onTeamA && m.winning_team === "a") ||
-                      (!onTeamA && m.winning_team === "b");
-
-                    return {
-                      id: m.id,
-                      opponentLabel,
-                      setsLabel,
-                      sessionId: session?.id ?? null,
-                      sessionLabel: session ? formatSessionDate(session.date_time) : null,
-                      sessionDateTime: session?.date_time ?? null,
-                      outcome: !m.verified ? "pending" : iWon ? "win" : "loss",
-                    };
+                    );
                   })}
-                  emptyMessage="No matches logged yet — results show up here once you play a session."
-                />
-              </div>
-            </section>
-          </div>
+                </div>
+              )}
+            </div>
+          </section>
+
+          <section>
+            <h2 className="font-[family-name:var(--font-display)] text-xl font-bold uppercase tracking-tight text-[var(--color-ink)]">
+              Profile
+            </h2>
+            <div className="mt-4 rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-paper-raised)] p-6">
+              <ProfileOverview
+                name={player?.name ?? ""}
+                phone={player?.phone ?? null}
+                skillTier={player?.skill_tier ?? null}
+                duprId={player?.dupr_id ?? null}
+              />
+            </div>
+          </section>
+
+          <section>
+            <h2 className="font-[family-name:var(--font-display)] text-xl font-bold uppercase tracking-tight text-[var(--color-ink)]">
+              Match history
+            </h2>
+            <div className="mt-4">
+              <MatchHistoryList
+                items={(myMatches ?? []).map((m) => {
+                  const onTeamA = m.team_a.includes(user.id);
+                  const opponentIds = onTeamA ? m.team_b : m.team_a;
+                  const opponentLabel =
+                    opponentIds
+                      .map((pid: string) => matchPlayerNameById.get(pid) ?? "Unknown")
+                      .join(" & ") || "Unknown";
+                  const session = matchSessionById.get(m.session_id);
+                  const setsLabel = (m.sets as MatchSet[])
+                    .map((s) => (onTeamA ? `${s.a}-${s.b}` : `${s.b}-${s.a}`))
+                    .join(", ");
+                  const iWon =
+                    (onTeamA && m.winning_team === "a") ||
+                    (!onTeamA && m.winning_team === "b");
+
+                  return {
+                    id: m.id,
+                    opponentLabel,
+                    setsLabel,
+                    sessionId: session?.id ?? null,
+                    sessionLabel: session ? formatSessionDate(session.date_time) : null,
+                    sessionDateTime: session?.date_time ?? null,
+                    outcome: !m.verified ? "pending" : iWon ? "win" : "loss",
+                  };
+                })}
+                emptyMessage="No matches logged yet — results show up here once you play a session."
+              />
+            </div>
+          </section>
+
+          <section>
+            <h2 className="font-[family-name:var(--font-display)] text-xl font-bold uppercase tracking-tight text-[var(--color-ink)]">
+              Payments
+            </h2>
+            <div className="mt-4">
+              {!myPayments || myPayments.length === 0 ? (
+                <EmptyState message="No charges on your account." />
+              ) : (
+                <div className="overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-paper-raised)]">
+                  {myPayments.map((p, i) => (
+                    <div
+                      key={p.id}
+                      className={`flex items-center justify-between px-5 py-4 ${
+                        i !== myPayments.length - 1 ? "kitchen-line" : ""
+                      }`}
+                    >
+                      <div>
+                        <p className="font-medium text-[var(--color-ink)]">
+                          {p.type === "session_fee"
+                            ? (paymentSessionTitleById.get(p.session_id ?? "") ?? "Session fee")
+                            : `Membership · ${p.period}`}
+                        </p>
+                        <p className="font-[family-name:var(--font-mono)] text-sm text-[var(--color-ink-muted)]">
+                          {formatTZS(p.amount)}
+                        </p>
+                      </div>
+                      <span
+                        className={
+                          p.status === "paid"
+                            ? "shrink-0 rounded-[var(--radius-pill)] bg-[var(--color-court)] px-3 py-1 text-xs font-semibold text-white"
+                            : "shrink-0 rounded-[var(--radius-pill)] border border-[var(--color-ball)] bg-[var(--color-ball)]/30 px-3 py-1 text-xs font-semibold text-[var(--color-ink)]"
+                        }
+                      >
+                        {p.status === "paid" ? "Paid" : "Due"}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </section>
         </div>
       </div>
     </div>
@@ -234,11 +233,11 @@ export default async function DashboardPage() {
 
 function StatCard({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-paper-raised)] p-6">
-      <p className="text-xs uppercase tracking-widest text-[var(--color-ink-muted)]">
+    <div className="px-2 py-3 text-center sm:px-4 sm:py-4">
+      <p className="text-[10px] uppercase tracking-widest text-[var(--color-ink-muted)] sm:text-xs">
         {label}
       </p>
-      <p className="mt-1 font-[family-name:var(--font-mono)] text-4xl font-semibold text-[var(--color-ink)]">
+      <p className="mt-0.5 font-[family-name:var(--font-mono)] text-xl font-semibold text-[var(--color-ink)] sm:text-2xl">
         {value}
       </p>
     </div>

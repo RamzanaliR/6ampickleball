@@ -2,8 +2,10 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/page-header";
 import { EmptyState } from "@/components/empty-state";
-import { FeedComposeForm } from "@/components/feed-compose-form";
+import { FeedAddPostButton } from "@/components/feed-add-post-button";
+import { FeedGalleryList, type FeedListPost } from "@/components/feed-post-card";
 import { formatSessionDate } from "@/lib/format";
+import type { FeedMediaItem } from "@/lib/types";
 
 export default async function FeedPage() {
   const supabase = await createClient();
@@ -22,9 +24,9 @@ export default async function FeedPage() {
   if (player?.status !== "approved") {
     return (
       <div>
-        <PageHeader eyebrow="Club feed" title="Feed" />
+        <PageHeader eyebrow="The Club" title="The Club" />
         <div className="mx-auto mt-8 max-w-3xl px-6 pb-16">
-          <EmptyState message="Your account needs admin approval before you can see the feed." />
+          <EmptyState message="Your account needs admin approval before you can see The Club." />
         </div>
       </div>
     );
@@ -34,7 +36,7 @@ export default async function FeedPage() {
   // caller's own posts regardless of status — no extra filtering needed.
   const { data: posts } = await supabase
     .from("community_feed")
-    .select("id, content, image_url, status, created_at, posted_by")
+    .select("id, content, image_url, media, status, created_at, posted_by")
     .order("created_at", { ascending: false });
 
   const posterIds = [...new Set((posts ?? []).map((p) => p.posted_by))];
@@ -43,52 +45,35 @@ export default async function FeedPage() {
     : { data: [] as { id: string; name: string }[] };
   const posterNameById = new Map((posters ?? []).map((p) => [p.id, p.name]));
 
+  const listPosts: FeedListPost[] = (posts ?? []).map((post) => {
+    const media: FeedMediaItem[] =
+      Array.isArray(post.media) && post.media.length > 0
+        ? (post.media as FeedMediaItem[])
+        : post.image_url
+          ? [{ url: post.image_url, type: "image" }]
+          : [];
+    return {
+      id: post.id,
+      content: post.content,
+      media,
+      posterName: posterNameById.get(post.posted_by) ?? "Unknown",
+      createdAtLabel: formatSessionDate(post.created_at),
+      statusLabel: post.status === "approved" ? null : (post.status as "pending" | "rejected"),
+    };
+  });
+
   return (
     <div>
-      <PageHeader eyebrow="Club feed" title="What's happening" />
-      <div className="mx-auto mt-8 max-w-3xl px-6 pb-16">
-        <div className="mb-8 rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-paper-raised)] p-6">
-          <FeedComposeForm />
+      <PageHeader eyebrow="The Club" title="The Club" />
+      <div className="mx-auto mt-8 max-w-5xl px-6 pb-16">
+        <div className="mb-6 flex justify-end">
+          <FeedAddPostButton userId={user.id} />
         </div>
 
-        {!posts || posts.length === 0 ? (
+        {listPosts.length === 0 ? (
           <EmptyState message="No announcements yet — be the first to post." />
         ) : (
-          <div className="space-y-4">
-            {posts.map((post) => (
-              <div
-                key={post.id}
-                className="rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-paper-raised)] p-6"
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <p className="whitespace-pre-wrap text-[var(--color-ink)]">{post.content}</p>
-                  {post.status !== "approved" && (
-                    <span
-                      className={
-                        post.status === "pending"
-                          ? "shrink-0 rounded-[var(--radius-pill)] border border-[var(--color-ball)] bg-[var(--color-ball)]/30 px-3 py-1 text-xs font-semibold text-[var(--color-ink)]"
-                          : "shrink-0 rounded-[var(--radius-pill)] border border-[var(--color-line)] px-3 py-1 text-xs font-semibold text-[var(--color-ink-muted)]"
-                      }
-                    >
-                      {post.status === "pending" ? "Pending review" : "Rejected"}
-                    </span>
-                  )}
-                </div>
-                {post.image_url && (
-                  // eslint-disable-next-line @next/next/no-img-element -- arbitrary external URL, next/image would need remotePatterns configured per-domain
-                  <img
-                    src={post.image_url}
-                    alt=""
-                    className="mt-4 max-h-96 w-full rounded-[var(--radius-input)] object-cover"
-                  />
-                )}
-                <p className="mt-4 font-[family-name:var(--font-mono)] text-xs uppercase tracking-widest text-[var(--color-ink-muted)]">
-                  {posterNameById.get(post.posted_by) ?? "Unknown"} ·{" "}
-                  {formatSessionDate(post.created_at)}
-                </p>
-              </div>
-            ))}
-          </div>
+          <FeedGalleryList posts={listPosts} />
         )}
       </div>
     </div>

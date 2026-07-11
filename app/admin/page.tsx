@@ -24,18 +24,12 @@ export default async function AdminPage() {
     { count: pendingCount },
     { count: upcomingCount },
     { count: rosterCount },
-    { count: pendingMatchCount },
     { count: unpaidCount },
     { count: pendingFeedCount },
   ] = await Promise.all([
     supabase.from("players").select("id", { count: "exact", head: true }).eq("status", "pending"),
     supabase.from("sessions").select("id", { count: "exact", head: true }).eq("status", "upcoming"),
     supabase.from("players").select("id", { count: "exact", head: true }).eq("status", "approved"),
-    supabase
-      .from("matches")
-      .select("id", { count: "exact", head: true })
-      .eq("verified", false)
-      .eq("source", "manual"),
     supabase.from("payments").select("id", { count: "exact", head: true }).eq("status", "unpaid"),
     supabase
       .from("community_feed")
@@ -49,7 +43,7 @@ export default async function AdminPage() {
       <div className="mx-auto mt-8 max-w-6xl px-6 pb-16">
         <AdminTabs active="/admin" />
 
-        <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-6">
+        <div className="mt-6 grid grid-cols-3 gap-3">
           <StatCard
             label="Pending approvals"
             value={pendingCount ?? 0}
@@ -61,11 +55,6 @@ export default async function AdminPage() {
             href="/admin/sessions"
           />
           <StatCard label="Approved players" value={rosterCount ?? 0} href="/admin/players" />
-          <StatCard
-            label="Results to verify"
-            value={pendingMatchCount ?? 0}
-            href="/admin/matches"
-          />
           <StatCard
             label="Unpaid dues"
             value={unpaidCount ?? 0}
@@ -86,10 +75,12 @@ function StatCard({ label, value, href }: { label: string; value: number; href: 
   return (
     <Link
       href={href}
-      className="block rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-paper-raised)] p-6 transition-colors hover:border-[var(--color-court)]"
+      className="block rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-paper-raised)] p-3 transition-colors hover:border-[var(--color-court)] sm:p-4"
     >
-      <p className="text-xs uppercase tracking-widest text-[var(--color-ink-muted)]">{label}</p>
-      <p className="mt-1 font-[family-name:var(--font-mono)] text-4xl font-semibold text-[var(--color-ink)]">
+      <p className="text-[10px] uppercase tracking-widest text-[var(--color-ink-muted)] sm:text-xs">
+        {label}
+      </p>
+      <p className="mt-1 font-[family-name:var(--font-mono)] text-xl font-semibold text-[var(--color-ink)] sm:text-2xl">
         {value}
       </p>
     </Link>

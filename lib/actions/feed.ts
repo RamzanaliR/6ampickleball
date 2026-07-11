@@ -21,7 +21,23 @@ async function insertFeedPost(formData: FormData) {
   if (me?.status !== "approved") return { error: "Your account needs approval first." } as const;
 
   const content = String(formData.get("content") ?? "").trim();
-  const imageUrl = String(formData.get("image_url") ?? "").trim();
+  const mediaRaw = String(formData.get("media") ?? "[]");
+  let media: { url: string; type: "image" | "video" }[] = [];
+  try {
+    const parsed = JSON.parse(mediaRaw);
+    if (Array.isArray(parsed)) {
+      media = parsed
+        .filter(
+          (m) =>
+            m &&
+            typeof m.url === "string" &&
+            (m.type === "image" || m.type === "video")
+        )
+        .slice(0, 10);
+    }
+  } catch {
+    // ignore malformed media payloads — post still goes through text-only
+  }
   if (!content) return { error: "Write something first." } as const;
 
   const isAdmin = me.role === "admin";
@@ -29,7 +45,7 @@ async function insertFeedPost(formData: FormData) {
   const { error } = await supabase.from("community_feed").insert({
     posted_by: user.id,
     content,
-    image_url: imageUrl || null,
+    media,
     status: isAdmin ? "approved" : "pending",
   });
 

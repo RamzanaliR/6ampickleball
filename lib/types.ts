@@ -121,12 +121,18 @@ export interface Payment {
 }
 
 export type FeedPostStatus = "pending" | "approved" | "rejected";
+export type FeedMediaType = "image" | "video";
+export interface FeedMediaItem {
+  url: string;
+  type: FeedMediaType;
+}
 
 export interface CommunityFeedPost {
   id: string;
   posted_by: string;
   content: string;
   image_url: string | null;
+  media: FeedMediaItem[];
   status: FeedPostStatus;
   created_at: string;
 }

@@ -7,7 +7,7 @@ export default async function LeaderboardPage() {
   const supabase = await createClient();
   const { data: players } = await supabase
     .from("players")
-    .select("id, name, points, wins, losses, skill_tier")
+    .select("id, name, points, wins, losses")
     .eq("status", "approved")
     .eq("is_guest", false)
     .order("points", { ascending: false });

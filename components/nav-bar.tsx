@@ -16,7 +16,7 @@ const baseLinks = [
   { href: "/sessions", label: "Sessions" },
   { href: "/leaderboard", label: "Leaderboard" },
   { href: "/tournaments", label: "Tournaments" },
-  { href: "/feed", label: "Feed" },
+  { href: "/feed", label: "The Club" },
 ];
 
 export function NavBar({ user }: { user: NavUser }) {
