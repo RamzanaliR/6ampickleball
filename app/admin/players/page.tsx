@@ -7,6 +7,7 @@ import { PendingApprovalsButton } from "@/components/admin/pending-approvals-but
 import { AddMemberButton } from "@/components/admin/add-member-button";
 import { RemoveMemberButton } from "@/components/admin/remove-member-button";
 import { RemoveGuestButton } from "@/components/admin/remove-guest-button";
+import { ToggleAdminButton } from "@/components/admin/toggle-admin-button";
 
 export default async function AdminPlayersPage() {
   const supabase = await createClient();
@@ -89,7 +90,14 @@ export default async function AdminPlayersPage() {
                           {p.dupr_id ?? "—"}
                         </td>
                         <td className="px-5 py-2.5 text-right">
-                          <RemoveMemberButton playerId={p.id} playerName={p.name} />
+                          <div className="flex items-center justify-end gap-4">
+                            <ToggleAdminButton
+                              playerId={p.id}
+                              playerName={p.name}
+                              isAdmin={p.role === "admin"}
+                            />
+                            <RemoveMemberButton playerId={p.id} playerName={p.name} />
+                          </div>
                         </td>
                       </tr>
                     ))}

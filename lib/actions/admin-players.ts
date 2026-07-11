@@ -186,3 +186,31 @@ export async function removeGuest(playerId: string) {
   revalidatePath("/admin");
   revalidatePath("/admin/players");
 }
+
+/**
+ * Promotes a player to admin, or demotes an admin back to a regular
+ * player. Blocks demoting the last remaining admin so the club can't
+ * accidentally end up with no one who can access the admin tools.
+ */
+export async function setAdminRole(playerId: string, makeAdmin: boolean) {
+  const supabase = await createClient();
+  await requireAdmin(supabase);
+
+  if (!makeAdmin) {
+    const { count } = await supabase
+      .from("players")
+      .select("id", { count: "exact", head: true })
+      .eq("role", "admin");
+    if ((count ?? 0) <= 1) {
+      throw new Error("Can't remove the last remaining admin.");
+    }
+  }
+
+  const { error } = await supabase
+    .from("players")
+    .update({ role: makeAdmin ? "admin" : "player" })
+    .eq("id", playerId);
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/admin/players");
+}
