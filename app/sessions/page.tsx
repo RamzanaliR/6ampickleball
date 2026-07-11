@@ -18,7 +18,7 @@ export default async function SessionsPage() {
 
   const { data: player } = await supabase
     .from("players")
-    .select("status")
+    .select("status, role")
     .eq("id", user.id)
     .single();
 
@@ -89,6 +89,16 @@ export default async function SessionsPage() {
         eyebrow="This week & beyond"
         title="Sessions"
         subtitle="Say I'm in before spots fill — the waitlist kicks in automatically."
+        action={
+          player?.role === "admin" ? (
+            <Link
+              href="/admin/sessions/new"
+              className="rounded-[var(--radius-pill)] bg-[var(--color-court)] px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[var(--color-court-dark)]"
+            >
+              + New session
+            </Link>
+          ) : undefined
+        }
       />
       <div className="mx-auto mt-8 max-w-6xl space-y-12 px-6 pb-16">
         <div className="grid gap-8 md:grid-cols-2">
