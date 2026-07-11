@@ -27,7 +27,7 @@ export function Modal({
       ref={dialogRef}
       onClose={onClose}
       onCancel={onClose}
-      className="w-full max-w-lg rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-paper-raised)] p-0 backdrop:bg-[var(--color-ink)]/40"
+      className="m-auto w-full max-w-lg rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-paper-raised)] p-0 backdrop:bg-[var(--color-ink)]/40"
     >
       <div className="flex items-center justify-between border-b border-[var(--color-line)] px-6 py-4">
         <h2 className="font-[family-name:var(--font-display)] text-lg font-bold uppercase tracking-tight text-[var(--color-ink)]">

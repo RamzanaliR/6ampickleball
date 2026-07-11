@@ -1,10 +1,10 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/page-header";
 import { AdminTabs } from "@/components/admin/admin-tabs";
 import { EmptyState } from "@/components/empty-state";
-import { PlayerApprovalRow } from "@/components/admin/player-approval-row";
+import { PendingApprovalsButton } from "@/components/admin/pending-approvals-button";
+import { AddMemberButton } from "@/components/admin/add-member-button";
 
 export default async function AdminPlayersPage() {
   const supabase = await createClient();
@@ -22,18 +22,24 @@ export default async function AdminPlayersPage() {
 
   if (me?.role !== "admin") redirect("/dashboard");
 
-  const { data: pending } = await supabase
-    .from("players")
-    .select("id, name, email, phone, skill_tier")
-    .eq("status", "pending")
-    .order("created_at", { ascending: true });
-
-  const { data: roster } = await supabase
-    .from("players")
-    .select("id, name, email, status, role, dupr_id")
-    .neq("status", "pending")
-    .eq("is_guest", false)
-    .order("name", { ascending: true });
+  const [{ data: pending }, { data: members }, { data: guests }] = await Promise.all([
+    supabase
+      .from("players")
+      .select("id, name, email, phone, skill_tier")
+      .eq("status", "pending")
+      .order("created_at", { ascending: true }),
+    supabase
+      .from("players")
+      .select("id, name, dupr_id, role")
+      .eq("status", "approved")
+      .eq("is_guest", false)
+      .order("name", { ascending: true }),
+    supabase
+      .from("players")
+      .select("id, name, dupr_id")
+      .eq("is_guest", true)
+      .order("name", { ascending: true }),
+  ]);
 
   return (
     <div>
@@ -41,87 +47,83 @@ export default async function AdminPlayersPage() {
       <div className="mx-auto mt-8 max-w-6xl px-6 pb-16">
         <AdminTabs active="/admin/players" />
 
-        <div className="mt-6 flex justify-end">
-          <Link
-            href="/admin/players/new"
-            className="rounded-[var(--radius-pill)] bg-[var(--color-court)] px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[var(--color-court-dark)]"
-          >
-            Add member
-          </Link>
+        <div className="mt-6 flex justify-end gap-3">
+          <PendingApprovalsButton initialPending={pending ?? []} />
+          <AddMemberButton />
         </div>
 
-        <section className="mt-6">
-          <h2 className="font-[family-name:var(--font-display)] text-xl font-bold uppercase tracking-tight text-[var(--color-ink)]">
-            Pending approval
-          </h2>
-          <div className="mt-4 rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-paper-raised)] px-6">
-            {!pending || pending.length === 0 ? (
-              <div className="py-10">
-                <EmptyState message="No one waiting on approval right now." />
-              </div>
-            ) : (
-              pending.map((p) => <PlayerApprovalRow key={p.id} player={p} />)
-            )}
-          </div>
-        </section>
-
-        <section className="mt-10">
-          <h2 className="font-[family-name:var(--font-display)] text-xl font-bold uppercase tracking-tight text-[var(--color-ink)]">
-            Roster
-          </h2>
-          <div className="mt-4 overflow-x-auto rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-paper-raised)]">
-            {!roster || roster.length === 0 ? (
-              <div className="p-10">
-                <EmptyState message="No approved or rejected players yet." />
-              </div>
-            ) : (
-              <table className="w-full min-w-[560px] text-left">
-                <thead>
-                  <tr className="kitchen-line font-[family-name:var(--font-mono)] text-xs uppercase tracking-widest text-[var(--color-ink-muted)]">
-                    <th className="px-6 py-3">Name</th>
-                    <th className="px-6 py-3">Email</th>
-                    <th className="px-6 py-3">DUPR</th>
-                    <th className="px-6 py-3 text-right">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {roster.map((p, i) => (
-                    <tr
-                      key={p.id}
-                      className={i !== roster.length - 1 ? "kitchen-line" : ""}
-                    >
-                      <td className="px-6 py-3 font-medium text-[var(--color-ink)]">
-                        {p.name}
-                        {p.role === "admin" && (
-                          <span className="ml-2 rounded-[var(--radius-pill)] bg-[var(--color-court)]/10 px-2 py-0.5 text-xs font-semibold text-[var(--color-court)]">
-                            Admin
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-6 py-3 text-sm text-[var(--color-ink-muted)]">
-                        {p.email ?? "—"}
-                      </td>
-                      <td className="px-6 py-3 font-[family-name:var(--font-mono)] text-sm text-[var(--color-ink-muted)]">
-                        {p.dupr_id ?? "—"}
-                      </td>
-                      <td className="px-6 py-3 text-right">
-                        <span
-                          className={
-                            p.status === "approved"
-                              ? "text-sm font-medium text-[var(--color-court)]"
-                              : "text-sm font-medium text-[var(--color-danger)]"
-                          }
-                        >
-                          {p.status}
-                        </span>
-                      </td>
+        <div className="mt-6 grid gap-8 md:grid-cols-2">
+          <section>
+            <h2 className="font-[family-name:var(--font-display)] text-xl font-bold uppercase tracking-tight text-[var(--color-ink)]">
+              Club members
+            </h2>
+            <div className="mt-4 overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-paper-raised)]">
+              {!members || members.length === 0 ? (
+                <div className="p-10">
+                  <EmptyState message="No approved members yet." />
+                </div>
+              ) : (
+                <table className="w-full text-left">
+                  <thead>
+                    <tr className="kitchen-line font-[family-name:var(--font-mono)] text-xs uppercase tracking-widest text-[var(--color-ink-muted)]">
+                      <th className="px-5 py-2.5">Name</th>
+                      <th className="px-5 py-2.5">DUPR ID</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
-        </section>
+                  </thead>
+                  <tbody>
+                    {members.map((p, i) => (
+                      <tr key={p.id} className={i !== members.length - 1 ? "kitchen-line" : ""}>
+                        <td className="px-5 py-2.5 text-sm font-medium text-[var(--color-ink)]">
+                          {p.name}
+                          {p.role === "admin" && (
+                            <span className="ml-2 rounded-[var(--radius-pill)] bg-[var(--color-court)]/10 px-2 py-0.5 text-[10px] font-semibold text-[var(--color-court)]">
+                              Admin
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-5 py-2.5 font-[family-name:var(--font-mono)] text-sm text-[var(--color-ink-muted)]">
+                          {p.dupr_id ?? "—"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </section>
+
+          <section>
+            <h2 className="font-[family-name:var(--font-display)] text-xl font-bold uppercase tracking-tight text-[var(--color-ink)]">
+              Guest players
+            </h2>
+            <div className="mt-4 overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-paper-raised)]">
+              {!guests || guests.length === 0 ? (
+                <div className="p-10">
+                  <EmptyState message="No guest players yet." />
+                </div>
+              ) : (
+                <table className="w-full text-left">
+                  <thead>
+                    <tr className="kitchen-line font-[family-name:var(--font-mono)] text-xs uppercase tracking-widest text-[var(--color-ink-muted)]">
+                      <th className="px-5 py-2.5">Name</th>
+                      <th className="px-5 py-2.5">DUPR ID</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {guests.map((p, i) => (
+                      <tr key={p.id} className={i !== guests.length - 1 ? "kitchen-line" : ""}>
+                        <td className="px-5 py-2.5 text-sm font-medium text-[var(--color-ink)]">{p.name}</td>
+                        <td className="px-5 py-2.5 font-[family-name:var(--font-mono)] text-sm text-[var(--color-ink-muted)]">
+                          {p.dupr_id ?? "—"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </section>
+        </div>
       </div>
     </div>
   );

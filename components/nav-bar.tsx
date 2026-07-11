@@ -24,10 +24,8 @@ const baseLinks = [
 // get this instead of the app nav.
 const marketingLinks = [
   { href: "/#about", label: "About" },
-  { href: "/#chairperson", label: "Chairperson" },
-  { href: "/#how-it-works", label: "How it works" },
   { href: "/#events", label: "Events" },
-  { href: "/#stats", label: "By the numbers" },
+  { href: "/#stats", label: "Numbers" },
 ];
 
 export function NavBar({ user }: { user: NavUser }) {
@@ -88,20 +86,12 @@ export function NavBar({ user }: { user: NavUser }) {
               Sign out
             </button>
           ) : (
-            <div className="flex items-center gap-3">
-              <Link
-                href="/login"
-                className="text-sm font-medium text-[var(--color-ink-muted)] hover:text-[var(--color-court)]"
-              >
-                Sign in
-              </Link>
-              <Link
-                href="/signup"
-                className="rounded-[var(--radius-pill)] bg-[var(--color-court)] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[var(--color-court-dark)]"
-              >
-                Join the club
-              </Link>
-            </div>
+            <Link
+              href="/login"
+              className="rounded-[var(--radius-pill)] bg-[var(--color-court)] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[var(--color-court-dark)]"
+            >
+              Sign in
+            </Link>
           )}
         </nav>
 
@@ -145,22 +135,13 @@ export function NavBar({ user }: { user: NavUser }) {
               Sign out
             </button>
           ) : (
-            <>
-              <Link
-                href="/login"
-                onClick={() => setOpen(false)}
-                className="py-3 text-base font-medium text-[var(--color-ink)]"
-              >
-                Sign in
-              </Link>
-              <Link
-                href="/signup"
-                onClick={() => setOpen(false)}
-                className="py-3 text-base font-semibold text-[var(--color-court)]"
-              >
-                Join the club
-              </Link>
-            </>
+            <Link
+              href="/login"
+              onClick={() => setOpen(false)}
+              className="mt-2 inline-block w-fit rounded-[var(--radius-pill)] bg-[var(--color-court)] px-4 py-2 text-sm font-semibold text-white"
+            >
+              Sign in
+            </Link>
           )}
         </nav>
       )}

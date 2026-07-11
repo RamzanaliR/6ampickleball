@@ -1,15 +1,26 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { FormField } from "@/components/form-field";
 import { addMember, type AddMemberFormState } from "@/lib/actions/admin-players";
 
 const initialState: AddMemberFormState = {};
 
-export function AddMemberForm() {
+export function AddMemberForm({
+  onCreated,
+  onAddAnother,
+}: {
+  onCreated?: () => void;
+  onAddAnother?: () => void;
+} = {}) {
   const [state, formAction] = useActionState(addMember, initialState);
   const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    if (state.created) onCreated?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.created]);
 
   if (state.created) {
     const { name, email, password } = state.created;
@@ -38,7 +49,7 @@ export function AddMemberForm() {
             {copied ? "Copied" : "Copy for WhatsApp"}
           </button>
           <button
-            onClick={() => window.location.assign("/admin/players/new")}
+            onClick={() => (onAddAnother ? onAddAnother() : window.location.assign("/admin/players/new"))}
             className="rounded-[var(--radius-pill)] border border-[var(--color-line)] px-5 py-2.5 text-sm font-medium text-[var(--color-ink)] transition-colors hover:border-[var(--color-court)] hover:text-[var(--color-court)]"
           >
             Add another

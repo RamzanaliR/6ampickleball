@@ -5,8 +5,10 @@ import { approvePlayer, rejectPlayer } from "@/lib/actions/admin-players";
 
 export function PlayerApprovalRow({
   player,
+  onResolved,
 }: {
   player: { id: string; name: string; email: string; phone: string | null; skill_tier: string | null };
+  onResolved?: () => void;
 }) {
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -22,6 +24,7 @@ export function PlayerApprovalRow({
           await rejectPlayer(player.id);
         }
         setResolved(true);
+        onResolved?.();
       } catch (e) {
         setError(e instanceof Error ? e.message : "Something went wrong");
       }

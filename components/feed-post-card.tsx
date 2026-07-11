@@ -84,7 +84,7 @@ function GalleryDialog({ post, onClose }: { post: FeedListPost | null; onClose: 
       ref={dialogRef}
       onClose={onClose}
       onCancel={onClose}
-      className="w-full max-w-4xl rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-paper-raised)] p-0 backdrop:bg-[var(--color-ink)]/60"
+      className="m-auto w-full max-w-4xl rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-paper-raised)] p-0 backdrop:bg-[var(--color-ink)]/60"
     >
       {post && (
         <div className="flex max-h-[85vh] flex-col md:flex-row">
