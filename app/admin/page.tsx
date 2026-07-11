@@ -28,8 +28,8 @@ export default async function AdminPage() {
     { count: unpaidCount },
     { count: pendingFeedCount },
   ] = await Promise.all([
-    supabase.from("players").select("id", { count: "exact", head: true }).eq("status", "approved"),
-    supabase.from("players").select("id", { count: "exact", head: true }).eq("is_guest", true),
+    supabase.from("players").select("id", { count: "exact", head: true }).eq("status", "approved").eq("is_guest", false),
+    supabase.from("players").select("id", { count: "exact", head: true }).eq("is_guest", true).eq("status", "approved"),
     supabase.from("sessions").select("id", { count: "exact", head: true }).eq("status", "completed"),
     supabase.from("sessions").select("id", { count: "exact", head: true }).eq("status", "upcoming"),
     supabase.from("payments").select("id", { count: "exact", head: true }).eq("direction", "received").eq("status", "unpaid"),

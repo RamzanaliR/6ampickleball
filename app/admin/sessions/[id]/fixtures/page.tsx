@@ -74,6 +74,7 @@ export default async function SessionFixturesPage({
     .from("players")
     .select("id, name")
     .eq("is_guest", true)
+    .eq("status", "approved")
     .order("name");
 
   const settings = session.fixture_settings as FixtureSettings | null;

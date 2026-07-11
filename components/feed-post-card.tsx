@@ -16,7 +16,7 @@ export function FeedGalleryList({ posts }: { posts: FeedListPost[] }) {
   const [selected, setSelected] = useState<FeedListPost | null>(null);
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2">
+    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
       {posts.map((post) => (
         <button
           key={post.id}

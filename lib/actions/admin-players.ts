@@ -157,3 +157,32 @@ export async function removeMember(playerId: string): Promise<RemoveMemberResult
   revalidatePath("/leaderboard");
   return result;
 }
+
+/**
+ * Removes a guest from the active guest list without touching their
+ * history. Guests have no auth.users account (they're just a players
+ * row), so this is always a soft removal — status = 'rejected' takes
+ * them out of the "Guest players" list, but their id stays valid so
+ * every match/session/payment that references them keeps working.
+ */
+export async function removeGuest(playerId: string) {
+  const supabase = await createClient();
+  await requireAdmin(supabase);
+
+  const { data: guest, error: fetchError } = await supabase
+    .from("players")
+    .select("is_guest")
+    .eq("id", playerId)
+    .single();
+  if (fetchError) throw new Error(fetchError.message);
+  if (!guest?.is_guest) throw new Error("Not a guest player");
+
+  const { error } = await supabase
+    .from("players")
+    .update({ status: "rejected" })
+    .eq("id", playerId);
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/admin");
+  revalidatePath("/admin/players");
+}

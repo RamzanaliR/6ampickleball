@@ -51,7 +51,7 @@ export default async function AdminPaymentsPage({
       supabase
         .from("players")
         .select("id, name, is_guest")
-        .or("status.eq.approved,is_guest.eq.true")
+        .eq("status", "approved")
         .order("name"),
       supabase.from("sessions").select("id, title").order("date_time", { ascending: false }),
     ]);
