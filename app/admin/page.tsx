@@ -21,18 +21,18 @@ export default async function AdminPage() {
   if (player?.role !== "admin") redirect("/dashboard");
 
   const [
-    { count: pendingCount },
-    { count: upcomingCount },
     { count: rosterCount },
     { count: guestCount },
+    { count: playedCount },
+    { count: upcomingCount },
     { count: unpaidCount },
     { count: pendingFeedCount },
   ] = await Promise.all([
-    supabase.from("players").select("id", { count: "exact", head: true }).eq("status", "pending"),
-    supabase.from("sessions").select("id", { count: "exact", head: true }).eq("status", "upcoming"),
     supabase.from("players").select("id", { count: "exact", head: true }).eq("status", "approved"),
     supabase.from("players").select("id", { count: "exact", head: true }).eq("is_guest", true),
-    supabase.from("payments").select("id", { count: "exact", head: true }).eq("status", "unpaid"),
+    supabase.from("sessions").select("id", { count: "exact", head: true }).eq("status", "completed"),
+    supabase.from("sessions").select("id", { count: "exact", head: true }).eq("status", "upcoming"),
+    supabase.from("payments").select("id", { count: "exact", head: true }).eq("direction", "received").eq("status", "unpaid"),
     supabase
       .from("community_feed")
       .select("id", { count: "exact", head: true })
@@ -46,25 +46,21 @@ export default async function AdminPage() {
         <AdminTabs active="/admin" />
 
         <div className="mt-6 grid grid-cols-3 gap-3">
-          <StatCard
-            label="Pending approvals"
-            value={pendingCount ?? 0}
-            href="/admin/players"
-          />
+          <StatCard label="Club members" value={rosterCount ?? 0} href="/admin/players" />
+          <StatCard label="Guest players" value={guestCount ?? 0} href="/admin/players" />
+          <StatCard label="Played sessions" value={playedCount ?? 0} href="/admin/sessions" />
           <StatCard
             label="Upcoming sessions"
             value={upcomingCount ?? 0}
             href="/admin/sessions"
           />
-          <StatCard label="Approved players" value={rosterCount ?? 0} href="/admin/players" />
-          <StatCard label="Guest players" value={guestCount ?? 0} href="/admin/players" />
           <StatCard
             label="Unpaid dues"
             value={unpaidCount ?? 0}
             href="/admin/payments?status=unpaid"
           />
           <StatCard
-            label="Feed posts to review"
+            label="Posts to review"
             value={pendingFeedCount ?? 0}
             href="/admin/feed"
           />

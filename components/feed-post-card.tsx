@@ -84,6 +84,9 @@ function GalleryDialog({ post, onClose }: { post: FeedListPost | null; onClose: 
       ref={dialogRef}
       onClose={onClose}
       onCancel={onClose}
+      onClick={(e) => {
+        if (e.target === dialogRef.current) onClose();
+      }}
       className="m-auto w-full max-w-4xl rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-paper-raised)] p-0 backdrop:bg-[var(--color-ink)]/60"
     >
       {post && (

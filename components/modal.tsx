@@ -27,6 +27,9 @@ export function Modal({
       ref={dialogRef}
       onClose={onClose}
       onCancel={onClose}
+      onClick={(e) => {
+        if (e.target === dialogRef.current) onClose();
+      }}
       className="m-auto w-full max-w-lg rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-paper-raised)] p-0 backdrop:bg-[var(--color-ink)]/40"
     >
       <div className="flex items-center justify-between border-b border-[var(--color-line)] px-6 py-4">

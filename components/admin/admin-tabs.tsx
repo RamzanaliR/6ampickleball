@@ -5,7 +5,7 @@ const tabs = [
   { href: "/admin/players", label: "Players" },
   { href: "/admin/sessions", label: "Sessions" },
   { href: "/admin/tournaments", label: "Tournaments" },
-  { href: "/admin/payments", label: "Payments" },
+  { href: "/admin/payments", label: "Finances" },
   { href: "/admin/feed", label: "The Club" },
 ];
 
