@@ -121,3 +121,38 @@ export async function rejectPlayer(playerId: string) {
   revalidatePath("/admin");
   revalidatePath("/admin/players");
 }
+
+export type RemoveMemberResult = { mode: "deleted" | "removed" };
+
+/**
+ * Removes a member from the club. Tries a full account delete first
+ * (auth.users cascades to public.players). If that's blocked — because
+ * they created sessions, submitted matches, marked payments, checked
+ * someone in, or posted to the feed, all of which reference players.id
+ * without cascade — falls back to a soft removal (status = 'rejected')
+ * so the roster/leaderboard stay clean without breaking those records.
+ */
+export async function removeMember(playerId: string): Promise<RemoveMemberResult> {
+  const supabase = await createClient();
+  await requireAdmin(supabase);
+
+  const admin = createAdminClient();
+  const { error: deleteError } = await admin.auth.admin.deleteUser(playerId);
+
+  let result: RemoveMemberResult;
+  if (!deleteError) {
+    result = { mode: "deleted" };
+  } else {
+    const { error: fallbackError } = await supabase
+      .from("players")
+      .update({ status: "rejected" })
+      .eq("id", playerId);
+    if (fallbackError) throw new Error(fallbackError.message);
+    result = { mode: "removed" };
+  }
+
+  revalidatePath("/admin");
+  revalidatePath("/admin/players");
+  revalidatePath("/leaderboard");
+  return result;
+}

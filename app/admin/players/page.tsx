@@ -5,6 +5,7 @@ import { AdminTabs } from "@/components/admin/admin-tabs";
 import { EmptyState } from "@/components/empty-state";
 import { PendingApprovalsButton } from "@/components/admin/pending-approvals-button";
 import { AddMemberButton } from "@/components/admin/add-member-button";
+import { RemoveMemberButton } from "@/components/admin/remove-member-button";
 
 export default async function AdminPlayersPage() {
   const supabase = await createClient();
@@ -68,6 +69,7 @@ export default async function AdminPlayersPage() {
                     <tr className="kitchen-line font-[family-name:var(--font-mono)] text-xs uppercase tracking-widest text-[var(--color-ink-muted)]">
                       <th className="px-5 py-2.5">Name</th>
                       <th className="px-5 py-2.5">DUPR ID</th>
+                      <th className="px-5 py-2.5" />
                     </tr>
                   </thead>
                   <tbody>
@@ -83,6 +85,9 @@ export default async function AdminPlayersPage() {
                         </td>
                         <td className="px-5 py-2.5 font-[family-name:var(--font-mono)] text-sm text-[var(--color-ink-muted)]">
                           {p.dupr_id ?? "—"}
+                        </td>
+                        <td className="px-5 py-2.5 text-right">
+                          <RemoveMemberButton playerId={p.id} playerName={p.name} />
                         </td>
                       </tr>
                     ))}

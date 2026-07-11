@@ -6,8 +6,9 @@ import { RsvpButton } from "@/components/rsvp-button";
 import { FixtureRoundNavigator } from "@/components/fixture-round-navigator";
 import { SessionStandingsTable } from "@/components/session-standings-table";
 import { ReadOnlyMatchCard } from "@/components/read-only-match-card";
+import { ExportMatchesCsvButton } from "@/components/export-matches-csv-button";
 import { computeStandings, sortStandings } from "@/lib/fixtures/standings";
-import { formatSessionDate, formatSessionTime } from "@/lib/format";
+import { formatSessionDate, formatSessionTime, toDarDateInputValue } from "@/lib/format";
 import type { FixtureSettings, MatchSet } from "@/lib/types";
 
 export default async function SessionDetailPage({
@@ -74,9 +75,10 @@ export default async function SessionDetailPage({
 
   const playerIds = [...new Set(matches.flatMap((m) => [...m.team_a, ...m.team_b]))];
   const { data: playersData } = playerIds.length
-    ? await supabase.from("players").select("id, name").in("id", playerIds)
-    : { data: [] as { id: string; name: string }[] };
+    ? await supabase.from("players").select("id, name, dupr_id").in("id", playerIds)
+    : { data: [] as { id: string; name: string; dupr_id: string | null }[] };
   const nameById = new Map((playersData ?? []).map((p) => [p.id, p.name]));
+  const duprById = new Map((playersData ?? []).map((p) => [p.id, p.dupr_id]));
   const teamLabel = (ids: string[]) =>
     ids.map((pid) => nameById.get(pid) ?? "Unknown").join(" & ");
 
@@ -136,7 +138,7 @@ export default async function SessionDetailPage({
             </p>
           </div>
         )}
-        {session.status === "upcoming" && (
+        {session.status === "upcoming" && !hasFixtures && (
           <div className="mb-8 flex items-center justify-between rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-paper-raised)] p-5">
             <p className="text-sm text-[var(--color-ink-muted)]">
               {spotsLeft > 0 ? `${spotsLeft} spots left` : "Full — waitlist open"}
@@ -152,9 +154,20 @@ export default async function SessionDetailPage({
         ) : (
           <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]">
             <section>
-              <h2 className="font-[family-name:var(--font-display)] text-xl font-bold uppercase tracking-tight text-[var(--color-ink)]">
-                Standings
-              </h2>
+              <div className="flex items-center justify-between gap-3">
+                <h2 className="font-[family-name:var(--font-display)] text-xl font-bold uppercase tracking-tight text-[var(--color-ink)]">
+                  Standings
+                </h2>
+                {matches.some((m) => (m.sets as MatchSet[]).length > 0) && (
+                  <ExportMatchesCsvButton
+                    sessionTitle={session.title}
+                    dateLabel={toDarDateInputValue(session.date_time)}
+                    matches={matches}
+                    nameById={nameById}
+                    duprById={duprById}
+                  />
+                )}
+              </div>
               <div className="mt-4">
                 {settings && standingsRows.length > 0 ? (
                   <SessionStandingsTable

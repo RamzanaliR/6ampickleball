@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/page-header";
 import { EmptyState } from "@/components/empty-state";
@@ -108,9 +109,10 @@ export default async function DashboardPage() {
                     const session = Array.isArray(r.sessions) ? r.sessions[0] : r.sessions;
                     if (!session) return null;
                     return (
-                      <div
+                      <Link
                         key={session.id}
-                        className={`flex items-center justify-between px-5 py-4 ${
+                        href={`/sessions/${session.id}`}
+                        className={`flex items-center justify-between px-5 py-4 transition-colors hover:bg-[var(--color-paper)] ${
                           i !== myRsvps.length - 1 ? "kitchen-line" : ""
                         }`}
                       >
@@ -126,7 +128,7 @@ export default async function DashboardPage() {
                             Waitlisted
                           </span>
                         )}
-                      </div>
+                      </Link>
                     );
                   })}
                 </div>

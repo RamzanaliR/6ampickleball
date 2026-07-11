@@ -91,72 +91,78 @@ export default async function SessionsPage() {
         subtitle="Say I'm in before spots fill — the waitlist kicks in automatically."
       />
       <div className="mx-auto mt-8 max-w-6xl space-y-12 px-6 pb-16">
-        {current.length > 0 && (
+        <div className="grid gap-8 md:grid-cols-2">
           <section>
             <h2 className="font-[family-name:var(--font-display)] text-xl font-bold uppercase tracking-tight text-[var(--color-ink)]">
               Current
             </h2>
-            <div className="mt-4 grid gap-4 md:grid-cols-2">
-              {current.map((s) => (
-                <Link
-                  key={s.id}
-                  href={`/sessions/${s.id}`}
-                  className="rounded-[var(--radius-card)] border border-[var(--color-court)] bg-[var(--color-paper-raised)] p-6 transition-colors hover:border-[var(--color-court-dark)]"
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <p className="font-[family-name:var(--font-mono)] text-xs uppercase tracking-widest text-[var(--color-court)]">
-                        {formatSessionDate(s.date_time)} · {formatSessionTime(s.date_time)}
+            <div className="mt-4">
+              {current.length === 0 ? (
+                <EmptyState message="No session in progress right now." />
+              ) : (
+                <div className="space-y-4">
+                  {current.map((s) => (
+                    <Link
+                      key={s.id}
+                      href={`/sessions/${s.id}`}
+                      className="block rounded-[var(--radius-card)] border border-[var(--color-court)] bg-[var(--color-paper-raised)] p-6 transition-colors hover:border-[var(--color-court-dark)]"
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <p className="font-[family-name:var(--font-mono)] text-xs uppercase tracking-widest text-[var(--color-court)]">
+                            {formatSessionDate(s.date_time)} · {formatSessionTime(s.date_time)}
+                          </p>
+                          <h3 className="mt-1 font-[family-name:var(--font-display)] text-2xl font-bold uppercase tracking-tight text-[var(--color-ink)]">
+                            {s.title}
+                          </h3>
+                          <p className="mt-1 text-sm text-[var(--color-ink-muted)]">{s.location}</p>
+                        </div>
+                        <span className="shrink-0 rounded-[var(--radius-pill)] bg-[var(--color-court)] px-3 py-1 text-xs font-semibold text-white">
+                          Fixtures live
+                        </span>
+                      </div>
+                      {!s.counts_toward_leaderboard && (
+                        <p className="mt-2 text-xs text-[var(--color-ink-muted)]">
+                          Doesn&apos;t count toward the season leaderboard
+                        </p>
+                      )}
+                      <p className="mt-4 text-sm font-medium text-[var(--color-court)]">
+                        View fixtures &amp; standings →
                       </p>
-                      <h3 className="mt-1 font-[family-name:var(--font-display)] text-2xl font-bold uppercase tracking-tight text-[var(--color-ink)]">
-                        {s.title}
-                      </h3>
-                      <p className="mt-1 text-sm text-[var(--color-ink-muted)]">{s.location}</p>
-                    </div>
-                    <span className="shrink-0 rounded-[var(--radius-pill)] bg-[var(--color-court)] px-3 py-1 text-xs font-semibold text-white">
-                      Fixtures live
-                    </span>
-                  </div>
-                  {!s.counts_toward_leaderboard && (
-                    <p className="mt-2 text-xs text-[var(--color-ink-muted)]">
-                      Doesn&apos;t count toward the season leaderboard
-                    </p>
-                  )}
-                  <p className="mt-4 text-sm font-medium text-[var(--color-court)]">
-                    View fixtures &amp; standings →
-                  </p>
-                </Link>
-              ))}
+                    </Link>
+                  ))}
+                </div>
+              )}
             </div>
           </section>
-        )}
 
-        <section>
-          <h2 className="font-[family-name:var(--font-display)] text-xl font-bold uppercase tracking-tight text-[var(--color-ink)]">
-            Upcoming
-          </h2>
-          <div className="mt-4">
-            {upcoming.length === 0 ? (
-              <EmptyState message="No sessions scheduled yet — check back soon." />
-            ) : (
-              <div className="grid gap-4 md:grid-cols-2">
-                {upcoming.map((s) => {
-                  const confirmedCount = confirmedCountBySession.get(s.id) ?? 0;
-                  const spotsLeft = Math.max(s.capacity - confirmedCount, 0);
-                  const myStatus = myStatusBySession.get(s.id) ?? "none";
-                  return (
-                    <SessionCard
-                      key={s.id}
-                      session={s}
-                      spotsLeft={spotsLeft}
-                      myStatus={myStatus}
-                    />
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </section>
+          <section>
+            <h2 className="font-[family-name:var(--font-display)] text-xl font-bold uppercase tracking-tight text-[var(--color-ink)]">
+              Upcoming
+            </h2>
+            <div className="mt-4">
+              {upcoming.length === 0 ? (
+                <EmptyState message="No sessions scheduled yet — check back soon." />
+              ) : (
+                <div className="space-y-4">
+                  {upcoming.map((s) => {
+                    const confirmedCount = confirmedCountBySession.get(s.id) ?? 0;
+                    const spotsLeft = Math.max(s.capacity - confirmedCount, 0);
+                    const myStatus = myStatusBySession.get(s.id) ?? "none";
+                    return (
+                      <SessionCard
+                        key={s.id}
+                        session={s}
+                        spotsLeft={spotsLeft}
+                        myStatus={myStatus}
+                      />
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </section>
+        </div>
 
         {previous.length > 0 && (
           <section>
