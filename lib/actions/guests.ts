@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 
-export type AddGuestState = { error?: string };
+export type AddGuestState = { error?: string; success?: boolean };
 
 export async function addGuestToSession(
   sessionId: string,
@@ -29,8 +29,9 @@ export async function addGuestToSession(
 
   revalidatePath(`/admin/sessions/${sessionId}/no-shows`);
   revalidatePath(`/admin/sessions/${sessionId}/fixtures`);
+  revalidatePath(`/sessions/${sessionId}`);
   revalidatePath("/sessions");
-  return {};
+  return { success: true };
 }
 
 export type AddMemberToSessionState = { error?: string };

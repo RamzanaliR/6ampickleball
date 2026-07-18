@@ -100,6 +100,90 @@ export async function generateFixtures(
   return {};
 }
 
+/**
+ * Rebuilds a session's fixtures from scratch — for when the confirmed
+ * list needs correcting after the fact (someone confirmed but didn't
+ * show up). Deletes the existing schedule and any scores already
+ * entered, then regenerates using only players NOT flagged no_show.
+ * Flag no-shows first (on the No-shows page, or inline here) before
+ * regenerating.
+ */
+export async function regenerateFixtures(
+  sessionId: string,
+  _prevState: GenerateFixturesState,
+  formData: FormData
+): Promise<GenerateFixturesState> {
+  const supabase = await createClient();
+  let adminId: string;
+  try {
+    adminId = await requireAdmin(supabase);
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Not authorized" };
+  }
+
+  const courts = Number(formData.get("courts"));
+  const roundMinutesLabel = String(formData.get("round_minutes_label") ?? "10 min");
+  const scoring = String(formData.get("scoring") ?? "points") as FixtureSettings["scoring"];
+  const rankBy = String(formData.get("rank_by") ?? "wins") as FixtureSettings["rankBy"];
+  const tiebreak = String(formData.get("tiebreak") ?? "wins") as FixtureSettings["tiebreak"];
+
+  if (!courts || courts < 1) return { error: "Enter at least 1 court." };
+
+  const { data: sessionRow } = await supabase
+    .from("sessions")
+    .select("counts_toward_leaderboard")
+    .eq("id", sessionId)
+    .single();
+  const countsTowardLeaderboard = sessionRow?.counts_toward_leaderboard ?? true;
+
+  const { data: rsvps } = await supabase
+    .from("rsvps")
+    .select("player_id")
+    .eq("session_id", sessionId)
+    .eq("status", "confirmed")
+    .eq("no_show", false);
+
+  const playerIds = (rsvps ?? []).map((r) => r.player_id);
+
+  let schedule;
+  try {
+    schedule = generateClassicRobin(playerIds, courts, 10);
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Couldn't generate fixtures." };
+  }
+
+  const { error: deleteError } = await supabase
+    .from("matches")
+    .delete()
+    .eq("session_id", sessionId)
+    .eq("source", "fixture");
+  if (deleteError) return { error: deleteError.message };
+
+  const rows = schedule.map((m) => ({
+    session_id: sessionId,
+    team_a: m.teamA,
+    team_b: m.teamB,
+    sets: [] as MatchSet[],
+    winning_team: null,
+    verified: false,
+    submitted_by: adminId,
+    round_number: m.round,
+    court_number: m.court,
+    source: "fixture" as const,
+    counts_toward_leaderboard: countsTowardLeaderboard,
+  }));
+
+  const { error: insertError } = await supabase.from("matches").insert(rows);
+  if (insertError) return { error: insertError.message };
+
+  const settings: FixtureSettings = { courts, roundMinutesLabel, scoring, rankBy, tiebreak };
+  await supabase.from("sessions").update({ fixture_settings: settings }).eq("id", sessionId);
+
+  revalidatePath(`/admin/sessions/${sessionId}/fixtures`);
+  revalidatePath(`/sessions/${sessionId}`);
+  return {};
+}
+
 export async function scoreFixtureMatch(matchId: string, sessionId: string, sets: MatchSet[]) {
   const supabase = await createClient();
 

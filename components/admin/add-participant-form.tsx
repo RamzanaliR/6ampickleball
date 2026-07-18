@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { FormField } from "@/components/form-field";
+import { TypeaheadSelect } from "@/components/typeahead-select";
 import { addGuestToSession, addMemberToSession, type AddGuestState, type AddMemberToSessionState } from "@/lib/actions/guests";
 
 const initialGuestState: AddGuestState = {};
@@ -43,20 +44,14 @@ export function AddParticipantForm({
       {participantType === "member" ? (
         <label className="block">
           <span className="text-sm font-medium text-[var(--color-ink)]">Member</span>
-          <select
-            name="player_id"
-            defaultValue=""
-            className="mt-1.5 w-full rounded-[var(--radius-input)] border border-[var(--color-line)] bg-[var(--color-paper)] px-3.5 py-2.5 text-[var(--color-ink)] outline-none focus:border-[var(--color-court)]"
-          >
-            <option value="" disabled>
-              {addableMembers.length === 0 ? "Everyone's already confirmed" : "Select member…"}
-            </option>
-            {addableMembers.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.name}
-              </option>
-            ))}
-          </select>
+          <div className="mt-1.5">
+            <TypeaheadSelect
+              name="player_id"
+              options={addableMembers.map((m) => ({ id: m.id, label: m.name }))}
+              placeholder={addableMembers.length === 0 ? "Everyone's already confirmed" : "Type a name…"}
+              emptyMessage="No matching members"
+            />
+          </div>
         </label>
       ) : (
         <>
@@ -76,20 +71,14 @@ export function AddParticipantForm({
           ) : (
             <label className="block">
               <span className="text-sm font-medium text-[var(--color-ink)]">Guest</span>
-              <select
-                name="existing_guest_id"
-                defaultValue=""
-                className="mt-1.5 w-full rounded-[var(--radius-input)] border border-[var(--color-line)] bg-[var(--color-paper)] px-3.5 py-2.5 text-[var(--color-ink)] outline-none focus:border-[var(--color-court)]"
-              >
-                <option value="" disabled>
-                  Select guest…
-                </option>
-                {knownGuests.map((g) => (
-                  <option key={g.id} value={g.id}>
-                    {g.name}
-                  </option>
-                ))}
-              </select>
+              <div className="mt-1.5">
+                <TypeaheadSelect
+                  name="existing_guest_id"
+                  options={knownGuests.map((g) => ({ id: g.id, label: g.name }))}
+                  placeholder="Type a name…"
+                  emptyMessage="No matching guests"
+                />
+              </div>
             </label>
           )}
         </>

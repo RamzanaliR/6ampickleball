@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/page-header";
 import { EmptyState } from "@/components/empty-state";
 import { RsvpButton } from "@/components/rsvp-button";
+import { SessionAddGuestInline } from "@/components/session-add-guest-inline";
 import { FixtureRoundNavigator } from "@/components/fixture-round-navigator";
 import { SessionStandingsTable } from "@/components/session-standings-table";
 import { ReadOnlyMatchCard } from "@/components/read-only-match-card";
@@ -61,8 +62,21 @@ export default async function SessionDetailPage({
     .select("player_id")
     .eq("session_id", id)
     .eq("status", "confirmed");
-  const confirmedCount = (confirmedRsvps ?? []).length;
+  const confirmedIds = (confirmedRsvps ?? []).map((r) => r.player_id);
+  const confirmedCount = confirmedIds.length;
   const spotsLeft = Math.max(session.capacity - confirmedCount, 0);
+
+  const { data: confirmedPlayersData } = confirmedIds.length
+    ? await supabase.from("players").select("id, name, nickname").in("id", confirmedIds)
+    : { data: [] as { id: string; name: string; nickname: string | null }[] };
+  const confirmedNames = (confirmedPlayersData ?? [])
+    .map((p) => displayName(p))
+    .sort((a, b) => a.localeCompare(b));
+
+  const { data: knownGuests } =
+    player?.role === "admin"
+      ? await supabase.from("players").select("id, name").eq("is_guest", true).eq("status", "approved").order("name")
+      : { data: [] as { id: string; name: string }[] };
 
   const { data: matchesData } = await supabase
     .from("matches")
@@ -149,6 +163,20 @@ export default async function SessionDetailPage({
             </div>
           </div>
         )}
+
+        <div className="mb-8 rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-paper-raised)] p-5">
+          <p className="text-xs uppercase tracking-widest text-[var(--color-ink-muted)]">
+            Confirmed ({confirmedNames.length})
+          </p>
+          {confirmedNames.length === 0 ? (
+            <p className="mt-2 text-sm text-[var(--color-ink-muted)]">Nobody yet.</p>
+          ) : (
+            <p className="mt-2 text-sm text-[var(--color-ink)]">{confirmedNames.join(", ")}</p>
+          )}
+          {player?.role === "admin" && (
+            <SessionAddGuestInline sessionId={session.id} knownGuests={knownGuests ?? []} />
+          )}
+        </div>
 
         {player?.role === "admin" && hasFixtures && matches.some((m) => (m.sets as MatchSet[]).length > 0) && (
           <div className="mb-8 flex justify-end">

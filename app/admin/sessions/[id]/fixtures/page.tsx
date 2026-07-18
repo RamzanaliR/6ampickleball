@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/page-header";
@@ -5,6 +6,7 @@ import { AdminTabs } from "@/components/admin/admin-tabs";
 import { EmptyState } from "@/components/empty-state";
 import { GenerateFixturesForm } from "@/components/admin/generate-fixtures-form";
 import { AddParticipantForm } from "@/components/admin/add-participant-form";
+import { RegenerateFixturesPanel } from "@/components/admin/regenerate-fixtures-panel";
 import { FixtureMatchScoreForm } from "@/components/admin/fixture-match-score-form";
 import { FixtureRoundNavigator } from "@/components/fixture-round-navigator";
 import { SessionStandingsTable } from "@/components/session-standings-table";
@@ -42,10 +44,11 @@ export default async function SessionFixturesPage({
 
   const { data: rsvps } = await supabase
     .from("rsvps")
-    .select("player_id")
+    .select("player_id, no_show")
     .eq("session_id", id)
     .eq("status", "confirmed");
   const confirmedIds = (rsvps ?? []).map((r) => r.player_id);
+  const noShowByPlayerId = new Map((rsvps ?? []).map((r) => [r.player_id, r.no_show]));
 
   const { data: confirmedPlayers } = confirmedIds.length
     ? await supabase.from("players").select("id, name").in("id", confirmedIds).order("name")
@@ -186,33 +189,55 @@ export default async function SessionFixturesPage({
             </section>
           </div>
         ) : (
-          <div className="mt-6 grid gap-8 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.3fr)]">
-            <section>
-              <div className="flex h-9 items-center">
-                <h2 className="font-[family-name:var(--font-display)] text-xl font-bold uppercase tracking-tight text-[var(--color-ink)]">
-                  Today&apos;s standings
-                </h2>
-              </div>
-              <div className="mt-4">
-                {settings && standingsRows.length > 0 ? (
-                  <SessionStandingsTable
-                    rows={standingsRows}
-                    nameById={nameById}
-                    scoring={settings.scoring}
-                  />
-                ) : (
-                  <EmptyState message="No scores yet — standings fill in as rounds get played." />
-                )}
-              </div>
-            </section>
+          <div className="mt-6 space-y-8">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <Link
+                href={`/admin/sessions/${id}/fixtures/print`}
+                target="_blank"
+                className="rounded-[var(--radius-pill)] border border-[var(--color-line)] px-4 py-2 text-sm font-medium text-[var(--color-ink)] transition-colors hover:border-[var(--color-court)] hover:text-[var(--color-court)]"
+              >
+                Export fixtures to PDF
+              </Link>
+            </div>
 
-            <section>
-              <FixtureRoundNavigator
-                title="Rounds"
-                subtitle={settings?.roundMinutesLabel}
-                rounds={roundsContent}
-              />
-            </section>
+            <RegenerateFixturesPanel
+              sessionId={id}
+              confirmedPlayers={(confirmedPlayers ?? []).map((p) => ({
+                id: p.id,
+                name: p.name,
+                noShow: noShowByPlayerId.get(p.id) ?? false,
+              }))}
+              settings={settings}
+            />
+
+            <div className="grid gap-8 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.3fr)]">
+              <section>
+                <div className="flex h-9 items-center">
+                  <h2 className="font-[family-name:var(--font-display)] text-xl font-bold uppercase tracking-tight text-[var(--color-ink)]">
+                    Today&apos;s standings
+                  </h2>
+                </div>
+                <div className="mt-4">
+                  {settings && standingsRows.length > 0 ? (
+                    <SessionStandingsTable
+                      rows={standingsRows}
+                      nameById={nameById}
+                      scoring={settings.scoring}
+                    />
+                  ) : (
+                    <EmptyState message="No scores yet — standings fill in as rounds get played." />
+                  )}
+                </div>
+              </section>
+
+              <section>
+                <FixtureRoundNavigator
+                  title="Rounds"
+                  subtitle={settings?.roundMinutesLabel}
+                  rounds={roundsContent}
+                />
+              </section>
+            </div>
           </div>
         )}
       </div>

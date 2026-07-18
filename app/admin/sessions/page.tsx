@@ -99,16 +99,16 @@ export default async function AdminSessionsPage() {
                       Fixtures
                     </Link>
                     <Link
-                      href={`/admin/sessions/${s.id}/no-shows`}
-                      className="text-sm font-medium text-[var(--color-ink)] hover:text-[var(--color-court)]"
-                    >
-                      No-shows
-                    </Link>
-                    <Link
                       href={`/admin/sessions/${s.id}/edit`}
                       className="text-sm font-medium text-[var(--color-ink)] hover:text-[var(--color-court)]"
                     >
                       Edit
+                    </Link>
+                    <Link
+                      href={`/admin/sessions/${s.id}/no-shows`}
+                      className="text-sm font-medium text-[var(--color-ink)] hover:text-[var(--color-court)]"
+                    >
+                      No-shows
                     </Link>
                     <SessionQuickActions sessionId={s.id} status={s.status} />
                     <SessionDeleteButton sessionId={s.id} />

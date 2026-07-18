@@ -18,9 +18,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="antialiased min-h-screen flex flex-col">
-        <Nav />
+        <div className="print:hidden">
+          <Nav />
+        </div>
         <main className="flex-1">{children}</main>
-        <footer className="kitchen-line border-t-0 px-6 py-8 text-sm text-[var(--color-ink-muted)] font-[family-name:var(--font-mono)]">
+        <footer className="kitchen-line border-t-0 px-6 py-8 text-sm text-[var(--color-ink-muted)] font-[family-name:var(--font-mono)] print:hidden">
           6AM Pickleball Club · built for the community
         </footer>
       </body>
