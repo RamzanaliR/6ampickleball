@@ -53,6 +53,34 @@ export function formatTZS(amount: number) {
   return `TZS ${new Intl.NumberFormat("en-US").format(amount)}`;
 }
 
+/** Current "YYYY-MM" in Dar es Salaam local time. */
+export function currentDarMonth() {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+  }).formatToParts(new Date());
+  const get = (t: string) => parts.find((p) => p.type === t)?.value ?? "";
+  return `${get("year")}-${get("month")}`;
+}
+
+/** Shift a "YYYY-MM" string by `delta` months (negative goes back). */
+export function shiftMonth(month: string, delta: number) {
+  const [y, m] = month.split("-").map(Number);
+  const d = new Date(Date.UTC(y, m - 1 + delta, 1));
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
+}
+
+/** "2026-07" -> "July 2026" */
+export function monthLabel(month: string) {
+  const [y, m] = month.split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, 1)).toLocaleDateString("en-US", {
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+}
+
 /**
  * The name shown almost everywhere in the app — a player's nickname
  * if they've set one, otherwise their full name. The two exceptions

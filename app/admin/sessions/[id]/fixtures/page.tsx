@@ -4,7 +4,7 @@ import { PageHeader } from "@/components/page-header";
 import { AdminTabs } from "@/components/admin/admin-tabs";
 import { EmptyState } from "@/components/empty-state";
 import { GenerateFixturesForm } from "@/components/admin/generate-fixtures-form";
-import { AddGuestForm } from "@/components/admin/add-guest-form";
+import { AddParticipantForm } from "@/components/admin/add-participant-form";
 import { FixtureMatchScoreForm } from "@/components/admin/fixture-match-score-form";
 import { FixtureRoundNavigator } from "@/components/fixture-round-navigator";
 import { SessionStandingsTable } from "@/components/session-standings-table";
@@ -77,6 +77,15 @@ export default async function SessionFixturesPage({
     .eq("status", "approved")
     .order("name");
 
+  const { data: allMembers } = await supabase
+    .from("players")
+    .select("id, name")
+    .eq("status", "approved")
+    .eq("is_guest", false)
+    .order("name");
+  const confirmedIdSet = new Set(confirmedIds);
+  const addableMembers = (allMembers ?? []).filter((m) => !confirmedIdSet.has(m.id));
+
   const settings = session.fixture_settings as FixtureSettings | null;
   const hasFixtures = matches.length > 0;
 
@@ -140,10 +149,14 @@ export default async function SessionFixturesPage({
           <div className="mt-6 grid gap-8 md:grid-cols-2">
             <section>
               <h2 className="font-[family-name:var(--font-display)] text-xl font-bold uppercase tracking-tight text-[var(--color-ink)]">
-                Add a guest
+                Add players
               </h2>
               <div className="mt-4 rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-paper-raised)] p-6">
-                <AddGuestForm sessionId={id} knownGuests={knownGuests ?? []} />
+                <AddParticipantForm
+                  sessionId={id}
+                  addableMembers={addableMembers}
+                  knownGuests={knownGuests ?? []}
+                />
               </div>
               <div className="mt-4">
                 <p className="text-xs uppercase tracking-widest text-[var(--color-ink-muted)]">

@@ -99,10 +99,10 @@ export default async function AdminSessionsPage() {
                       Fixtures
                     </Link>
                     <Link
-                      href={`/admin/sessions/${s.id}/attendance`}
+                      href={`/admin/sessions/${s.id}/no-shows`}
                       className="text-sm font-medium text-[var(--color-ink)] hover:text-[var(--color-court)]"
                     >
-                      Attendance
+                      No-shows
                     </Link>
                     <Link
                       href={`/admin/sessions/${s.id}/edit`}

@@ -8,6 +8,7 @@ import { AddMemberButton } from "@/components/admin/add-member-button";
 import { RemoveMemberButton } from "@/components/admin/remove-member-button";
 import { RemoveGuestButton } from "@/components/admin/remove-guest-button";
 import { ToggleAdminButton } from "@/components/admin/toggle-admin-button";
+import { SetDuesButton } from "@/components/admin/set-dues-button";
 
 export default async function AdminPlayersPage() {
   const supabase = await createClient();
@@ -33,7 +34,7 @@ export default async function AdminPlayersPage() {
       .order("created_at", { ascending: true }),
     supabase
       .from("players")
-      .select("id, name, dupr_id, role")
+      .select("id, name, dupr_id, role, monthly_dues_amount")
       .eq("status", "approved")
       .eq("is_guest", false)
       .order("name", { ascending: true }),
@@ -72,6 +73,7 @@ export default async function AdminPlayersPage() {
                     <tr className="kitchen-line font-[family-name:var(--font-mono)] text-xs uppercase tracking-widest text-[var(--color-ink-muted)]">
                       <th className="px-5 py-2.5">Name</th>
                       <th className="px-5 py-2.5">DUPR ID</th>
+                      <th className="px-5 py-2.5">Monthly dues</th>
                       <th className="px-5 py-2.5" />
                     </tr>
                   </thead>
@@ -88,6 +90,13 @@ export default async function AdminPlayersPage() {
                         </td>
                         <td className="px-5 py-2.5 font-[family-name:var(--font-mono)] text-sm text-[var(--color-ink-muted)]">
                           {p.dupr_id ?? "—"}
+                        </td>
+                        <td className="px-5 py-2.5">
+                          <SetDuesButton
+                            playerId={p.id}
+                            playerName={p.name}
+                            currentAmount={p.monthly_dues_amount}
+                          />
                         </td>
                         <td className="px-5 py-2.5 text-right">
                           <div className="flex items-center justify-end gap-4">

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { AuthCard, FormField } from "@/components/auth-card";
 
@@ -14,6 +15,7 @@ export default function SignupPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const router = useRouter();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -21,7 +23,7 @@ export default function SignupPage() {
     setLoading(true);
 
     const supabase = createClient();
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -34,6 +36,15 @@ export default function SignupPage() {
 
     if (error) {
       setError(error.message);
+      return;
+    }
+
+    // If email confirmation is off in Supabase, signUp already returns a
+    // live session — skip the "check your email" step and go straight to
+    // the dashboard, which shows its own "waiting on approval" state.
+    if (data.session) {
+      router.push("/dashboard");
+      router.refresh();
       return;
     }
 

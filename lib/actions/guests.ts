@@ -27,7 +27,51 @@ export async function addGuestToSession(
 
   if (error) return { error: error.message };
 
-  revalidatePath(`/admin/sessions/${sessionId}/attendance`);
+  revalidatePath(`/admin/sessions/${sessionId}/no-shows`);
+  revalidatePath(`/admin/sessions/${sessionId}/fixtures`);
+  revalidatePath("/sessions");
+  return {};
+}
+
+export type AddMemberToSessionState = { error?: string };
+
+/**
+ * Directly confirms an existing approved member for a session, as if
+ * they'd RSVP'd themselves — for the transition period where some
+ * confirmations still happen over WhatsApp instead of in the app.
+ * Bypasses capacity/waitlist since this is an intentional admin
+ * override, not a self-serve RSVP.
+ */
+export async function addMemberToSession(
+  sessionId: string,
+  _prevState: AddMemberToSessionState,
+  formData: FormData
+): Promise<AddMemberToSessionState> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  const { data: me } = await supabase
+    .from("players")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+  if (me?.role !== "admin") return { error: "Admins only" };
+
+  const playerId = String(formData.get("player_id") ?? "").trim();
+  if (!playerId) return { error: "Pick a member." };
+
+  const { error } = await supabase
+    .from("rsvps")
+    .upsert(
+      { player_id: playerId, session_id: sessionId, status: "confirmed" },
+      { onConflict: "player_id,session_id" }
+    );
+  if (error) return { error: error.message };
+
+  revalidatePath(`/admin/sessions/${sessionId}/no-shows`);
   revalidatePath(`/admin/sessions/${sessionId}/fixtures`);
   revalidatePath("/sessions");
   return {};

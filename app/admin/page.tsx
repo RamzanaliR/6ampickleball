@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/page-header";
 import { AdminTabs } from "@/components/admin/admin-tabs";
+import { DuesReminderCard } from "@/components/admin/dues-reminder-card";
+import { currentDarMonth, monthLabel as formatMonthLabel } from "@/lib/format";
 
 export default async function AdminPage() {
   const supabase = await createClient();
@@ -20,6 +22,8 @@ export default async function AdminPage() {
 
   if (player?.role !== "admin") redirect("/dashboard");
 
+  const period = currentDarMonth();
+
   const [
     { count: rosterCount },
     { count: guestCount },
@@ -27,6 +31,9 @@ export default async function AdminPage() {
     { count: upcomingCount },
     { count: unpaidCount },
     { count: pendingFeedCount },
+    { data: duesMonth },
+    { data: duesEligible },
+    { data: alreadyChargedThisMonth },
   ] = await Promise.all([
     supabase.from("players").select("id", { count: "exact", head: true }).eq("status", "approved").eq("is_guest", false),
     supabase.from("players").select("id", { count: "exact", head: true }).eq("is_guest", true).eq("status", "approved"),
@@ -37,13 +44,41 @@ export default async function AdminPage() {
       .from("community_feed")
       .select("id", { count: "exact", head: true })
       .eq("status", "pending"),
+    supabase.from("dues_months").select("period, status").eq("period", period).maybeSingle(),
+    supabase
+      .from("players")
+      .select("id, monthly_dues_amount")
+      .eq("status", "approved")
+      .eq("is_guest", false)
+      .not("monthly_dues_amount", "is", null)
+      .gt("monthly_dues_amount", 0),
+    supabase
+      .from("payments")
+      .select("player_id")
+      .eq("direction", "received")
+      .eq("type", "membership")
+      .eq("period", period),
   ]);
+
+  const chargedIds = new Set((alreadyChargedThisMonth ?? []).map((p) => p.player_id));
+  const eligible = (duesEligible ?? []).filter((m) => !chargedIds.has(m.id));
+  const eligibleTotal = eligible.reduce((sum, m) => sum + Number(m.monthly_dues_amount ?? 0), 0);
 
   return (
     <div>
       <PageHeader eyebrow="Admin" title="Club control room" />
       <div className="mx-auto mt-8 max-w-6xl px-6 pb-16">
         <AdminTabs active="/admin" />
+
+        {duesMonth?.status !== "charged" && (
+          <DuesReminderCard
+            period={period}
+            monthLabel={formatMonthLabel(period)}
+            eligibleCount={eligible.length}
+            eligibleTotal={eligibleTotal}
+            alreadySkipped={duesMonth?.status === "skipped"}
+          />
+        )}
 
         <div className="mt-6 grid grid-cols-3 gap-3">
           <StatCard label="Club members" value={rosterCount ?? 0} href="/admin/players" />

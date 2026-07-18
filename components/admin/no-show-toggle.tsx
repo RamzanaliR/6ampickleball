@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { setAttendance } from "@/lib/actions/attendance";
+import { setNoShow } from "@/lib/actions/no-shows";
 
-export function AttendanceCheckbox({
+export function NoShowToggle({
   sessionId,
   playerId,
   initialChecked,
@@ -19,7 +19,7 @@ export function AttendanceCheckbox({
     setError(null);
     startTransition(async () => {
       try {
-        await setAttendance(sessionId, playerId, checked);
+        await setNoShow(sessionId, playerId, checked);
       } catch (e) {
         setError(e instanceof Error ? e.message : "Something went wrong");
       }
@@ -27,15 +27,16 @@ export function AttendanceCheckbox({
   }
 
   return (
-    <div className="flex items-center gap-2">
+    <label className="flex items-center gap-2 text-sm text-[var(--color-ink-muted)]">
       {error && <span className="text-xs text-[var(--color-danger)]">{error}</span>}
       <input
         type="checkbox"
         defaultChecked={initialChecked}
         disabled={isPending}
         onChange={(e) => handleChange(e.target.checked)}
-        className="h-5 w-5 accent-[var(--color-court)] disabled:opacity-60"
+        className="h-5 w-5 accent-[var(--color-danger)] disabled:opacity-60"
       />
-    </div>
+      No-show
+    </label>
   );
 }
