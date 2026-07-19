@@ -26,12 +26,12 @@ export function SetDuesButton({
     const raw = String(formData.get("amount") ?? "").trim();
     const amount = raw ? Number(raw) : null;
     startTransition(async () => {
-      try {
-        await setMemberDuesAmount(playerId, amount);
+      const result = await setMemberDuesAmount(playerId, amount);
+      if (result.error) {
+        setError(result.error);
+      } else {
         setOpen(false);
         router.refresh();
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "Something went wrong");
       }
     });
   }

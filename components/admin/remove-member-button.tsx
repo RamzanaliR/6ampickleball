@@ -15,12 +15,12 @@ export function RemoveMemberButton({ playerId, playerName }: { playerId: string;
   function handleConfirm() {
     setError(null);
     startTransition(async () => {
-      try {
-        const { mode } = await removeMember(playerId);
-        setResult(mode);
+      const response = await removeMember(playerId);
+      if (response.error) {
+        setError(response.error);
+      } else if (response.mode) {
+        setResult(response.mode);
         router.refresh();
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "Something went wrong");
       }
     });
   }

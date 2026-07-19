@@ -28,12 +28,12 @@ export function DuesReminderCard({
   function handleCharge() {
     setError(null);
     startTransition(async () => {
-      try {
-        await chargeMonthlyDues(period);
+      const result = await chargeMonthlyDues(period);
+      if (result.error) {
+        setError(result.error);
+      } else {
         setOpenCharge(false);
         router.refresh();
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "Something went wrong");
       }
     });
   }
@@ -41,12 +41,12 @@ export function DuesReminderCard({
   function handleSkip() {
     setError(null);
     startTransition(async () => {
-      try {
-        await skipMonthlyDues(period);
+      const result = await skipMonthlyDues(period);
+      if (result.error) {
+        setError(result.error);
+      } else {
         setOpenSkip(false);
         router.refresh();
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "Something went wrong");
       }
     });
   }

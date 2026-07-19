@@ -17,16 +17,12 @@ export function PlayerApprovalRow({
   function handle(action: "approve" | "reject") {
     setError(null);
     startTransition(async () => {
-      try {
-        if (action === "approve") {
-          await approvePlayer(player.id);
-        } else {
-          await rejectPlayer(player.id);
-        }
+      const result = action === "approve" ? await approvePlayer(player.id) : await rejectPlayer(player.id);
+      if (result.error) {
+        setError(result.error);
+      } else {
         setResolved(true);
         onResolved?.();
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "Something went wrong");
       }
     });
   }

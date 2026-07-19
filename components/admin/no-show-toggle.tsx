@@ -18,11 +18,8 @@ export function NoShowToggle({
   function handleChange(checked: boolean) {
     setError(null);
     startTransition(async () => {
-      try {
-        await setNoShow(sessionId, playerId, checked);
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "Something went wrong");
-      }
+      const result = await setNoShow(sessionId, playerId, checked);
+      if (result.error) setError(result.error);
     });
   }
 

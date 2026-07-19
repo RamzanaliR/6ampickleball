@@ -3,36 +3,47 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 
-async function requireAdmin(supabase: Awaited<ReturnType<typeof createClient>>) {
+type AdminCheck =
+  | { ok: true; user: { id: string } }
+  | { ok: false; error: string };
+
+async function requireAdmin(supabase: Awaited<ReturnType<typeof createClient>>): Promise<AdminCheck> {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) throw new Error("Not authenticated");
+  if (!user) return { ok: false, error: "Not authenticated" };
 
   const { data: me } = await supabase
     .from("players")
     .select("role")
     .eq("id", user.id)
     .single();
-  if (me?.role !== "admin") throw new Error("Admins only");
+  if (me?.role !== "admin") return { ok: false, error: "Admins only" };
 
-  return user;
+  return { ok: true, user };
 }
 
-export async function setMemberDuesAmount(playerId: string, amount: number | null) {
+export type SetDuesAmountResult = { error?: string };
+
+export async function setMemberDuesAmount(
+  playerId: string,
+  amount: number | null
+): Promise<SetDuesAmountResult> {
   const supabase = await createClient();
-  await requireAdmin(supabase);
+  const admin = await requireAdmin(supabase);
+  if (!admin.ok) return { error: admin.error };
 
   const { error } = await supabase
     .from("players")
     .update({ monthly_dues_amount: amount && amount > 0 ? amount : null })
     .eq("id", playerId);
-  if (error) throw new Error(error.message);
+  if (error) return { error: error.message };
 
   revalidatePath("/admin/players");
+  return {};
 }
 
-export type ChargeDuesResult = { chargedCount: number; totalAmount: number };
+export type ChargeDuesResult = { error?: string; chargedCount?: number; totalAmount?: number };
 
 /**
  * Creates an unpaid membership charge for every approved, non-guest
@@ -43,7 +54,8 @@ export type ChargeDuesResult = { chargedCount: number; totalAmount: number };
  */
 export async function chargeMonthlyDues(period: string): Promise<ChargeDuesResult> {
   const supabase = await createClient();
-  const user = await requireAdmin(supabase);
+  const admin = await requireAdmin(supabase);
+  if (!admin.ok) return { error: admin.error };
 
   const { data: members, error: membersError } = await supabase
     .from("players")
@@ -52,7 +64,7 @@ export async function chargeMonthlyDues(period: string): Promise<ChargeDuesResul
     .eq("is_guest", false)
     .not("monthly_dues_amount", "is", null)
     .gt("monthly_dues_amount", 0);
-  if (membersError) throw new Error(membersError.message);
+  if (membersError) return { error: membersError.message };
 
   const { data: existing, error: existingError } = await supabase
     .from("payments")
@@ -60,7 +72,7 @@ export async function chargeMonthlyDues(period: string): Promise<ChargeDuesResul
     .eq("direction", "received")
     .eq("type", "membership")
     .eq("period", period);
-  if (existingError) throw new Error(existingError.message);
+  if (existingError) return { error: existingError.message };
   const alreadyCharged = new Set((existing ?? []).map((p) => p.player_id));
 
   const toCharge = (members ?? []).filter((m) => !alreadyCharged.has(m.id));
@@ -77,13 +89,13 @@ export async function chargeMonthlyDues(period: string): Promise<ChargeDuesResul
         status: "unpaid",
       }))
     );
-    if (insertError) throw new Error(insertError.message);
+    if (insertError) return { error: insertError.message };
   }
 
   const { error: monthError } = await supabase
     .from("dues_months")
-    .upsert({ period, status: "charged", decided_by: user.id, decided_at: new Date().toISOString() });
-  if (monthError) throw new Error(monthError.message);
+    .upsert({ period, status: "charged", decided_by: admin.user.id, decided_at: new Date().toISOString() });
+  if (monthError) return { error: monthError.message };
 
   revalidatePath("/admin");
   revalidatePath("/admin/payments");
@@ -93,15 +105,19 @@ export async function chargeMonthlyDues(period: string): Promise<ChargeDuesResul
   return { chargedCount: toCharge.length, totalAmount };
 }
 
+export type SkipDuesResult = { error?: string };
+
 /** Marks a month as skipped — no dues charged, members pay per-session. */
-export async function skipMonthlyDues(period: string) {
+export async function skipMonthlyDues(period: string): Promise<SkipDuesResult> {
   const supabase = await createClient();
-  const user = await requireAdmin(supabase);
+  const admin = await requireAdmin(supabase);
+  if (!admin.ok) return { error: admin.error };
 
   const { error } = await supabase
     .from("dues_months")
-    .upsert({ period, status: "skipped", decided_by: user.id, decided_at: new Date().toISOString() });
-  if (error) throw new Error(error.message);
+    .upsert({ period, status: "skipped", decided_by: admin.user.id, decided_at: new Date().toISOString() });
+  if (error) return { error: error.message };
 
   revalidatePath("/admin");
+  return {};
 }

@@ -4,11 +4,15 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-async function requireAdmin(supabase: Awaited<ReturnType<typeof createClient>>) {
+type AdminCheck =
+  | { ok: true; userId: string }
+  | { ok: false; error: string };
+
+async function requireAdmin(supabase: Awaited<ReturnType<typeof createClient>>): Promise<AdminCheck> {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) throw new Error("Not authenticated");
+  if (!user) return { ok: false, error: "Not authenticated" };
 
   const { data: player } = await supabase
     .from("players")
@@ -16,7 +20,9 @@ async function requireAdmin(supabase: Awaited<ReturnType<typeof createClient>>) 
     .eq("id", user.id)
     .single();
 
-  if (player?.role !== "admin") throw new Error("Admins only");
+  if (player?.role !== "admin") return { ok: false, error: "Admins only" };
+
+  return { ok: true, userId: user.id };
 }
 
 export type AddMemberFormState = {
@@ -42,11 +48,8 @@ export async function addMember(
   formData: FormData
 ): Promise<AddMemberFormState> {
   const supabase = await createClient();
-  try {
-    await requireAdmin(supabase);
-  } catch (e) {
-    return { error: e instanceof Error ? e.message : "Not authorized" };
-  }
+  const admin_ = await requireAdmin(supabase);
+  if (!admin_.ok) return { error: admin_.error };
 
   const name = String(formData.get("name") ?? "").trim();
   const nickname = String(formData.get("nickname") ?? "").trim();
@@ -92,38 +95,44 @@ export async function addMember(
   return { created: { name, email, password } };
 }
 
-export async function approvePlayer(playerId: string) {
+export type SimpleActionResult = { error?: string };
+
+export async function approvePlayer(playerId: string): Promise<SimpleActionResult> {
   const supabase = await createClient();
-  await requireAdmin(supabase);
+  const admin = await requireAdmin(supabase);
+  if (!admin.ok) return { error: admin.error };
 
   const { error } = await supabase
     .from("players")
     .update({ status: "approved" })
     .eq("id", playerId);
 
-  if (error) throw new Error(error.message);
+  if (error) return { error: error.message };
 
   revalidatePath("/admin");
   revalidatePath("/admin/players");
   revalidatePath("/leaderboard");
+  return {};
 }
 
-export async function rejectPlayer(playerId: string) {
+export async function rejectPlayer(playerId: string): Promise<SimpleActionResult> {
   const supabase = await createClient();
-  await requireAdmin(supabase);
+  const admin = await requireAdmin(supabase);
+  if (!admin.ok) return { error: admin.error };
 
   const { error } = await supabase
     .from("players")
     .update({ status: "rejected" })
     .eq("id", playerId);
 
-  if (error) throw new Error(error.message);
+  if (error) return { error: error.message };
 
   revalidatePath("/admin");
   revalidatePath("/admin/players");
+  return {};
 }
 
-export type RemoveMemberResult = { mode: "deleted" | "removed" };
+export type RemoveMemberResult = { mode?: "deleted" | "removed"; error?: string };
 
 /**
  * Removes a member from the club. Tries a full account delete first
@@ -135,7 +144,8 @@ export type RemoveMemberResult = { mode: "deleted" | "removed" };
  */
 export async function removeMember(playerId: string): Promise<RemoveMemberResult> {
   const supabase = await createClient();
-  await requireAdmin(supabase);
+  const admin_ = await requireAdmin(supabase);
+  if (!admin_.ok) return { error: admin_.error };
 
   const admin = createAdminClient();
   const { error: deleteError } = await admin.auth.admin.deleteUser(playerId);
@@ -148,7 +158,7 @@ export async function removeMember(playerId: string): Promise<RemoveMemberResult
       .from("players")
       .update({ status: "rejected" })
       .eq("id", playerId);
-    if (fallbackError) throw new Error(fallbackError.message);
+    if (fallbackError) return { error: fallbackError.message };
     result = { mode: "removed" };
   }
 
@@ -165,26 +175,28 @@ export async function removeMember(playerId: string): Promise<RemoveMemberResult
  * them out of the "Guest players" list, but their id stays valid so
  * every match/session/payment that references them keeps working.
  */
-export async function removeGuest(playerId: string) {
+export async function removeGuest(playerId: string): Promise<SimpleActionResult> {
   const supabase = await createClient();
-  await requireAdmin(supabase);
+  const admin = await requireAdmin(supabase);
+  if (!admin.ok) return { error: admin.error };
 
   const { data: guest, error: fetchError } = await supabase
     .from("players")
     .select("is_guest")
     .eq("id", playerId)
     .single();
-  if (fetchError) throw new Error(fetchError.message);
-  if (!guest?.is_guest) throw new Error("Not a guest player");
+  if (fetchError) return { error: fetchError.message };
+  if (!guest?.is_guest) return { error: "Not a guest player" };
 
   const { error } = await supabase
     .from("players")
     .update({ status: "rejected" })
     .eq("id", playerId);
-  if (error) throw new Error(error.message);
+  if (error) return { error: error.message };
 
   revalidatePath("/admin");
   revalidatePath("/admin/players");
+  return {};
 }
 
 /**
@@ -192,9 +204,10 @@ export async function removeGuest(playerId: string) {
  * player. Blocks demoting the last remaining admin so the club can't
  * accidentally end up with no one who can access the admin tools.
  */
-export async function setAdminRole(playerId: string, makeAdmin: boolean) {
+export async function setAdminRole(playerId: string, makeAdmin: boolean): Promise<SimpleActionResult> {
   const supabase = await createClient();
-  await requireAdmin(supabase);
+  const admin = await requireAdmin(supabase);
+  if (!admin.ok) return { error: admin.error };
 
   if (!makeAdmin) {
     const { count } = await supabase
@@ -202,7 +215,7 @@ export async function setAdminRole(playerId: string, makeAdmin: boolean) {
       .select("id", { count: "exact", head: true })
       .eq("role", "admin");
     if ((count ?? 0) <= 1) {
-      throw new Error("Can't remove the last remaining admin.");
+      return { error: "Can't remove the last remaining admin." };
     }
   }
 
@@ -210,9 +223,10 @@ export async function setAdminRole(playerId: string, makeAdmin: boolean) {
     .from("players")
     .update({ role: makeAdmin ? "admin" : "player" })
     .eq("id", playerId);
-  if (error) throw new Error(error.message);
+  if (error) return { error: error.message };
 
   revalidatePath("/admin/players");
+  return {};
 }
 
 export type UpdatePlayerDetailsState = { error?: string; success?: boolean };
@@ -224,11 +238,8 @@ export async function updateMemberDetails(
   formData: FormData
 ): Promise<UpdatePlayerDetailsState> {
   const supabase = await createClient();
-  try {
-    await requireAdmin(supabase);
-  } catch (e) {
-    return { error: e instanceof Error ? e.message : "Not authorized" };
-  }
+  const admin = await requireAdmin(supabase);
+  if (!admin.ok) return { error: admin.error };
 
   const name = String(formData.get("name") ?? "").trim();
   const nickname = String(formData.get("nickname") ?? "").trim();
@@ -261,11 +272,8 @@ export async function updateGuestDetails(
   formData: FormData
 ): Promise<UpdatePlayerDetailsState> {
   const supabase = await createClient();
-  try {
-    await requireAdmin(supabase);
-  } catch (e) {
-    return { error: e instanceof Error ? e.message : "Not authorized" };
-  }
+  const admin = await requireAdmin(supabase);
+  if (!admin.ok) return { error: admin.error };
 
   const name = String(formData.get("name") ?? "").trim();
   const duprId = String(formData.get("dupr_id") ?? "").trim();

@@ -22,12 +22,12 @@ export function ToggleAdminButton({
   function handleConfirm() {
     setError(null);
     startTransition(async () => {
-      try {
-        await setAdminRole(playerId, !isAdmin);
+      const result = await setAdminRole(playerId, !isAdmin);
+      if (result.error) {
+        setError(result.error);
+      } else {
         setOpen(false);
         router.refresh();
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "Something went wrong");
       }
     });
   }

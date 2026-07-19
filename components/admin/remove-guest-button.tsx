@@ -15,12 +15,12 @@ export function RemoveGuestButton({ playerId, playerName }: { playerId: string; 
   function handleConfirm() {
     setError(null);
     startTransition(async () => {
-      try {
-        await removeGuest(playerId);
+      const result = await removeGuest(playerId);
+      if (result.error) {
+        setError(result.error);
+      } else {
         setDone(true);
         router.refresh();
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "Something went wrong");
       }
     });
   }
