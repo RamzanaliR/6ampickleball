@@ -6,15 +6,13 @@ import { AdminTabs } from "@/components/admin/admin-tabs";
 import { EmptyState } from "@/components/empty-state";
 import { PaymentStatusToggle } from "@/components/admin/payment-status-toggle";
 import { AddPaymentButton } from "@/components/admin/add-payment-button";
+import { FinancesFilterForm } from "@/components/admin/finances-filter-form";
 import { formatTZS, currentDarMonth, shiftMonth, monthLabel } from "@/lib/format";
 
 type SearchParams = {
   player?: string;
   session?: string;
-  status?: string;
-  period?: string;
-  receivedMonth?: string;
-  paidMonth?: string;
+  month?: string;
 };
 
 function buildHref(params: SearchParams, overrides: Partial<SearchParams>) {
@@ -54,31 +52,27 @@ export default async function AdminPaymentsPage({
 
   if (me?.role !== "admin") redirect("/dashboard");
 
-  const receivedMonth = params.receivedMonth || currentDarMonth();
-  const paidMonth = params.paidMonth || currentDarMonth();
-  const receivedRange = monthRange(receivedMonth);
-  const paidRange = monthRange(paidMonth);
-  const statusFilter = params.status || "paid";
+  const month = params.month || currentDarMonth();
+  const range = monthRange(month);
 
   let receivedQuery = supabase
     .from("payments")
     .select("id, player_id, session_id, period, amount, type, status")
     .eq("direction", "received")
-    .gte("created_at", receivedRange.start)
-    .lt("created_at", receivedRange.end)
+    .eq("status", "paid")
+    .gte("created_at", range.start)
+    .lt("created_at", range.end)
     .order("created_at", { ascending: false });
 
-  if (statusFilter !== "all") receivedQuery = receivedQuery.eq("status", statusFilter);
   if (params.player) receivedQuery = receivedQuery.eq("player_id", params.player);
   if (params.session) receivedQuery = receivedQuery.eq("session_id", params.session);
-  if (params.period) receivedQuery = receivedQuery.ilike("period", `%${params.period}%`);
 
   const paidQuery = supabase
     .from("payments")
     .select("id, paid_to, description, amount, status")
     .eq("direction", "paid")
-    .gte("created_at", paidRange.start)
-    .lt("created_at", paidRange.end)
+    .gte("created_at", range.start)
+    .lt("created_at", range.end)
     .order("created_at", { ascending: false });
 
   const [{ data: received }, { data: paid }, { data: players }, { data: sessions }] =
@@ -96,7 +90,9 @@ export default async function AdminPaymentsPage({
   const nameById = new Map((players ?? []).map((p) => [p.id, p.name]));
   const duesByPlayerId = new Map((players ?? []).map((p) => [p.id, p.monthly_dues_amount]));
   const sessionTitleById = new Map((sessions ?? []).map((s) => [s.id, s.title]));
-  const hasFilters = Boolean(params.player || params.session || params.status || params.period);
+
+  const receivedTotal = (received ?? []).reduce((sum, p) => sum + Number(p.amount), 0);
+  const paidTotal = (paid ?? []).reduce((sum, p) => sum + Number(p.amount), 0);
 
   return (
     <div>
@@ -105,61 +101,13 @@ export default async function AdminPaymentsPage({
         <AdminTabs active="/admin/payments" />
 
         <div className="mt-6 flex flex-wrap items-start justify-between gap-4">
-          <form method="get" className="flex flex-wrap items-center gap-3">
-            <select
-              name="player"
-              defaultValue={params.player ?? ""}
-              className="rounded-[var(--radius-input)] border border-[var(--color-line)] bg-[var(--color-paper-raised)] px-3 py-2 text-sm text-[var(--color-ink)] outline-none focus:border-[var(--color-court)]"
-            >
-              <option value="">All players</option>
-              {(players ?? []).map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
-            <select
-              name="session"
-              defaultValue={params.session ?? ""}
-              className="rounded-[var(--radius-input)] border border-[var(--color-line)] bg-[var(--color-paper-raised)] px-3 py-2 text-sm text-[var(--color-ink)] outline-none focus:border-[var(--color-court)]"
-            >
-              <option value="">All sessions</option>
-              {(sessions ?? []).map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.title}
-                </option>
-              ))}
-            </select>
-            <select
-              name="status"
-              defaultValue={statusFilter}
-              className="rounded-[var(--radius-input)] border border-[var(--color-line)] bg-[var(--color-paper-raised)] px-3 py-2 text-sm text-[var(--color-ink)] outline-none focus:border-[var(--color-court)]"
-            >
-              <option value="paid">Paid</option>
-              <option value="unpaid">Unpaid</option>
-              <option value="all">All statuses</option>
-            </select>
-            <input
-              name="period"
-              defaultValue={params.period ?? ""}
-              placeholder="Period e.g. 2026-07"
-              className="rounded-[var(--radius-input)] border border-[var(--color-line)] bg-[var(--color-paper-raised)] px-3 py-2 text-sm text-[var(--color-ink)] outline-none focus:border-[var(--color-court)]"
-            />
-            <button
-              type="submit"
-              className="rounded-[var(--radius-pill)] border border-[var(--color-line)] px-4 py-2 text-sm font-medium text-[var(--color-ink)] transition-colors hover:border-[var(--color-court)] hover:text-[var(--color-court)]"
-            >
-              Filter
-            </button>
-            {hasFilters && (
-              <Link
-                href="/admin/payments"
-                className="text-sm font-medium text-[var(--color-ink-muted)] hover:text-[var(--color-court)]"
-              >
-                Clear
-              </Link>
-            )}
-          </form>
+          <FinancesFilterForm
+            players={(players ?? []).map((p) => ({ id: p.id, name: p.name }))}
+            sessions={sessions ?? []}
+            player={params.player ?? ""}
+            session={params.session ?? ""}
+            month={month}
+          />
           <AddPaymentButton
             players={(players ?? []).map((p) => ({ id: p.id, name: p.name, is_guest: p.is_guest }))}
             sessions={sessions ?? []}
@@ -175,17 +123,17 @@ export default async function AdminPaymentsPage({
               </h2>
               <div className="flex shrink-0 items-center gap-3">
                 <Link
-                  href={buildHref(params, { receivedMonth: shiftMonth(receivedMonth, -1) })}
+                  href={buildHref(params, { month: shiftMonth(month, -1) })}
                   className="flex h-9 w-9 items-center justify-center rounded-[var(--radius-pill)] border border-[var(--color-line)] text-[var(--color-ink)] transition-colors hover:border-[var(--color-court)] hover:text-[var(--color-court)]"
                   aria-label="Previous month"
                 >
                   ←
                 </Link>
                 <p className="whitespace-nowrap font-[family-name:var(--font-mono)] text-sm font-medium text-[var(--color-ink)]">
-                  {monthLabel(receivedMonth)}
+                  {monthLabel(month)}
                 </p>
                 <Link
-                  href={buildHref(params, { receivedMonth: shiftMonth(receivedMonth, 1) })}
+                  href={buildHref(params, { month: shiftMonth(month, 1) })}
                   className="flex h-9 w-9 items-center justify-center rounded-[var(--radius-pill)] border border-[var(--color-line)] text-[var(--color-ink)] transition-colors hover:border-[var(--color-court)] hover:text-[var(--color-court)]"
                   aria-label="Next month"
                 >
@@ -193,15 +141,12 @@ export default async function AdminPaymentsPage({
                 </Link>
               </div>
             </div>
-            <div className="mt-4">
-              {statusFilter === "paid" && (
-                <p className="mb-3 text-xs text-[var(--color-ink-muted)]">
-                  Showing payments actually received — switch the Status filter to see pending
-                  charges.
-                </p>
-              )}
+            <p className="mt-3 font-[family-name:var(--font-mono)] text-sm text-[var(--color-ink-muted)]">
+              Total: <span className="font-semibold text-[var(--color-ink)]">{formatTZS(receivedTotal)}</span>
+            </p>
+            <div className="mt-3">
               {!received || received.length === 0 ? (
-                <EmptyState message="No payments this month." />
+                <EmptyState message="No payments received this month." />
               ) : (
                 <div className="overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-paper-raised)]">
                   {received.map((p, i) => (
@@ -226,13 +171,7 @@ export default async function AdminPaymentsPage({
                         {formatTZS(p.amount)}
                       </p>
                       <div className="flex shrink-0 items-center gap-3">
-                        <span
-                          className={
-                            p.status === "paid"
-                              ? "text-sm font-medium text-[var(--color-court)]"
-                              : "text-sm font-medium text-[var(--color-danger)]"
-                          }
-                        >
+                        <span className="text-sm font-medium text-[var(--color-court)]">
                           {p.status}
                         </span>
                         <PaymentStatusToggle paymentId={p.id} status={p.status} />
@@ -251,17 +190,17 @@ export default async function AdminPaymentsPage({
               </h2>
               <div className="flex shrink-0 items-center gap-3">
                 <Link
-                  href={buildHref(params, { paidMonth: shiftMonth(paidMonth, -1) })}
+                  href={buildHref(params, { month: shiftMonth(month, -1) })}
                   className="flex h-9 w-9 items-center justify-center rounded-[var(--radius-pill)] border border-[var(--color-line)] text-[var(--color-ink)] transition-colors hover:border-[var(--color-court)] hover:text-[var(--color-court)]"
                   aria-label="Previous month"
                 >
                   ←
                 </Link>
                 <p className="whitespace-nowrap font-[family-name:var(--font-mono)] text-sm font-medium text-[var(--color-ink)]">
-                  {monthLabel(paidMonth)}
+                  {monthLabel(month)}
                 </p>
                 <Link
-                  href={buildHref(params, { paidMonth: shiftMonth(paidMonth, 1) })}
+                  href={buildHref(params, { month: shiftMonth(month, 1) })}
                   className="flex h-9 w-9 items-center justify-center rounded-[var(--radius-pill)] border border-[var(--color-line)] text-[var(--color-ink)] transition-colors hover:border-[var(--color-court)] hover:text-[var(--color-court)]"
                   aria-label="Next month"
                 >
@@ -269,7 +208,10 @@ export default async function AdminPaymentsPage({
                 </Link>
               </div>
             </div>
-            <div className="mt-4">
+            <p className="mt-3 font-[family-name:var(--font-mono)] text-sm text-[var(--color-ink-muted)]">
+              Total: <span className="font-semibold text-[var(--color-ink)]">{formatTZS(paidTotal)}</span>
+            </p>
+            <div className="mt-3">
               {!paid || paid.length === 0 ? (
                 <EmptyState message="Nothing logged this month." />
               ) : (

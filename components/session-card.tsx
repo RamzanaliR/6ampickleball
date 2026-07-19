@@ -8,6 +8,7 @@ export function SessionCard({
   session,
   spotsLeft,
   myStatus,
+  confirmedNames,
 }: {
   session: {
     id: string;
@@ -19,6 +20,7 @@ export function SessionCard({
   };
   spotsLeft: number;
   myStatus: RsvpState;
+  confirmedNames?: string[];
 }) {
   const full = spotsLeft <= 0;
 
@@ -57,6 +59,13 @@ export function SessionCard({
           {full ? "Full — waitlist open" : `${spotsLeft} of ${session.capacity} spots left`}
         </p>
       </div>
+
+      {confirmedNames && confirmedNames.length > 0 && (
+        <p className="mt-3 text-xs text-[var(--color-ink-muted)]">
+          <span className="font-medium text-[var(--color-ink)]">Confirmed:</span>{" "}
+          {confirmedNames.join(", ")}
+        </p>
+      )}
 
       <div className="mt-4 flex items-center gap-3">
         <div className="flex-1">

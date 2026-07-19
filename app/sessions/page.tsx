@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/page-header";
 import { EmptyState } from "@/components/empty-state";
 import { SessionCard } from "@/components/session-card";
-import { formatSessionDate, formatSessionTime } from "@/lib/format";
+import { formatSessionDate, formatSessionTime, displayName } from "@/lib/format";
 
 type RsvpState = "confirmed" | "waitlisted" | "none";
 
@@ -64,12 +64,21 @@ export default async function SessionsPage() {
       : Promise.resolve({ data: [] }),
   ]);
 
+  const confirmedPlayerIds = [
+    ...new Set((rsvps ?? []).filter((r) => r.status === "confirmed").map((r) => r.player_id)),
+  ];
+  const { data: confirmedPlayersData } = confirmedPlayerIds.length
+    ? await supabase.from("players").select("id, name, nickname").in("id", confirmedPlayerIds)
+    : { data: [] as { id: string; name: string; nickname: string | null }[] };
+  const nameById = new Map((confirmedPlayersData ?? []).map((p) => [p.id, displayName(p)]));
+
   const sessionsWithFixtures = new Set((fixtureMatches ?? []).map((m) => m.session_id));
 
   const current = allUpcoming.filter((s) => sessionsWithFixtures.has(s.id));
   const upcoming = allUpcoming.filter((s) => !sessionsWithFixtures.has(s.id));
 
   const confirmedCountBySession = new Map<string, number>();
+  const confirmedNamesBySession = new Map<string, string[]>();
   const myStatusBySession = new Map<string, RsvpState>();
   for (const r of rsvps ?? []) {
     if (r.status === "confirmed") {
@@ -77,10 +86,16 @@ export default async function SessionsPage() {
         r.session_id,
         (confirmedCountBySession.get(r.session_id) ?? 0) + 1
       );
+      const list = confirmedNamesBySession.get(r.session_id) ?? [];
+      list.push(nameById.get(r.player_id) ?? "Unknown");
+      confirmedNamesBySession.set(r.session_id, list);
     }
     if (r.player_id === user.id) {
       myStatusBySession.set(r.session_id, r.status as RsvpState);
     }
+  }
+  for (const names of confirmedNamesBySession.values()) {
+    names.sort((a, b) => a.localeCompare(b));
   }
 
   return (
@@ -136,6 +151,12 @@ export default async function SessionsPage() {
                           Doesn&apos;t count toward the season leaderboard
                         </p>
                       )}
+                      {(confirmedNamesBySession.get(s.id) ?? []).length > 0 && (
+                        <p className="mt-2 text-xs text-[var(--color-ink-muted)]">
+                          <span className="font-medium text-[var(--color-ink)]">Confirmed:</span>{" "}
+                          {(confirmedNamesBySession.get(s.id) ?? []).join(", ")}
+                        </p>
+                      )}
                       <p className="mt-4 text-sm font-medium text-[var(--color-court)]">
                         View fixtures &amp; standings →
                       </p>
@@ -165,6 +186,7 @@ export default async function SessionsPage() {
                         session={s}
                         spotsLeft={spotsLeft}
                         myStatus={myStatus}
+                        confirmedNames={confirmedNamesBySession.get(s.id) ?? []}
                       />
                     );
                   })}
