@@ -58,6 +58,12 @@ export function TypeaheadSelect({
           setSelectedId("");
           setOpen(true);
         }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            if (matches.length > 0) selectOption(matches[0]);
+          }
+        }}
         className="w-full rounded-[var(--radius-input)] border border-[var(--color-line)] bg-[var(--color-paper)] px-3.5 py-2.5 text-[var(--color-ink)] outline-none transition-colors focus:border-[var(--color-court)]"
       />
       {open && (

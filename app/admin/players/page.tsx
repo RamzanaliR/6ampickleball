@@ -26,7 +26,11 @@ export default async function AdminPlayersPage() {
 
   if (me?.role !== "admin") redirect("/dashboard");
 
-  const [{ data: pending }, { data: members }, { data: guests }] = await Promise.all([
+  const [
+    { data: pending },
+    { data: members, error: membersError },
+    { data: guests, error: guestsError },
+  ] = await Promise.all([
     supabase
       .from("players")
       .select("id, name, email, phone, skill_tier")
@@ -63,7 +67,17 @@ export default async function AdminPlayersPage() {
               Club members
             </h2>
             <div className="mt-4 overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-paper-raised)]">
-              {!members || members.length === 0 ? (
+              {membersError ? (
+                <div className="p-6">
+                  <p className="text-sm text-[var(--color-danger)]">
+                    Couldn&apos;t load Club Members: {membersError.message}
+                  </p>
+                  <p className="mt-1 text-xs text-[var(--color-ink-muted)]">
+                    This usually means a database migration hasn&apos;t been run yet — check the
+                    latest file in supabase/ against what&apos;s been applied to your project.
+                  </p>
+                </div>
+              ) : !members || members.length === 0 ? (
                 <div className="p-10">
                   <EmptyState message="No approved members yet." />
                 </div>
@@ -121,7 +135,13 @@ export default async function AdminPlayersPage() {
               Guest players
             </h2>
             <div className="mt-4 overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-paper-raised)]">
-              {!guests || guests.length === 0 ? (
+              {guestsError ? (
+                <div className="p-6">
+                  <p className="text-sm text-[var(--color-danger)]">
+                    Couldn&apos;t load Guest Players: {guestsError.message}
+                  </p>
+                </div>
+              ) : !guests || guests.length === 0 ? (
                 <div className="p-10">
                   <EmptyState message="No guest players yet." />
                 </div>

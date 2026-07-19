@@ -42,7 +42,7 @@ export default async function SessionFixturesPage({
 
   if (!session) notFound();
 
-  const { data: rsvps } = await supabase
+  const { data: rsvps, error: rsvpsError } = await supabase
     .from("rsvps")
     .select("player_id, no_show")
     .eq("session_id", id)
@@ -147,6 +147,18 @@ export default async function SessionFixturesPage({
       <PageHeader eyebrow="Admin" title={`Fixtures — ${session.title}`} />
       <div className="mx-auto mt-8 max-w-6xl px-6 pb-16">
         <AdminTabs active="/admin/sessions" />
+
+        {rsvpsError && (
+          <div className="mt-6 rounded-[var(--radius-card)] border border-[var(--color-danger)] bg-[var(--color-danger-bg)] p-5">
+            <p className="text-sm font-medium text-[var(--color-danger)]">
+              Couldn&apos;t load confirmed players: {rsvpsError.message}
+            </p>
+            <p className="mt-1 text-xs text-[var(--color-ink-muted)]">
+              This usually means a database migration hasn&apos;t been run yet — check
+              supabase/phase19_no_shows.sql has been applied to your project.
+            </p>
+          </div>
+        )}
 
         {!hasFixtures ? (
           <div className="mt-6 grid gap-8 md:grid-cols-2">
