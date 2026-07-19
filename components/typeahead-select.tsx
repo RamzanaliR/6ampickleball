@@ -9,11 +9,16 @@ export function TypeaheadSelect({
   options,
   placeholder,
   emptyMessage = "No matches",
+  onSelect,
 }: {
-  name: string;
+  name?: string;
   options: Option[];
   placeholder: string;
   emptyMessage?: string;
+  /** When provided, selecting an option calls this instead of (or as
+   *  well as) filling a hidden form field — used for "pick to add to a
+   *  list" flows rather than a single form value. */
+  onSelect?: (id: string) => void;
 }) {
   const [query, setQuery] = useState("");
   const [selectedId, setSelectedId] = useState("");
@@ -29,8 +34,14 @@ export function TypeaheadSelect({
           .slice(0, 8);
 
   function selectOption(option: Option) {
-    setQuery(option.label);
-    setSelectedId(option.id);
+    if (onSelect) {
+      onSelect(option.id);
+      setQuery("");
+      setSelectedId("");
+    } else {
+      setQuery(option.label);
+      setSelectedId(option.id);
+    }
     setOpen(false);
   }
 
@@ -43,7 +54,7 @@ export function TypeaheadSelect({
 
   return (
     <div ref={containerRef} className="relative" onBlur={handleBlur}>
-      <input type="hidden" name={name} value={selectedId} />
+      {name && <input type="hidden" name={name} value={selectedId} />}
       <input
         type="text"
         value={query}

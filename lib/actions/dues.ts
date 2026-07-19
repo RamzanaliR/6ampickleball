@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { currentDarMonth } from "@/lib/format";
 
 type AdminCheck =
   | { ok: true; user: { id: string } }
@@ -119,5 +120,75 @@ export async function skipMonthlyDues(period: string): Promise<SkipDuesResult> {
   if (error) return { error: error.message };
 
   revalidatePath("/admin");
+  return {};
+}
+
+export type SetDuesPaidResult = { error?: string };
+
+/**
+ * Toggles this month's membership dues paid/unpaid for a member,
+ * straight from the Players tab. If no charge exists yet for the
+ * current month (e.g. dues weren't charged in bulk, or this member
+ * was added after that happened) and the admin checks it, this
+ * creates one directly using their preset dues amount — so the
+ * checkbox works standalone without requiring "Charge dues" first.
+ */
+export async function setDuesPaidStatus(playerId: string, paid: boolean): Promise<SetDuesPaidResult> {
+  const supabase = await createClient();
+  const admin = await requireAdmin(supabase);
+  if (!admin.ok) return { error: admin.error };
+
+  const period = currentDarMonth();
+
+  const { data: existing, error: findError } = await supabase
+    .from("payments")
+    .select("id")
+    .eq("direction", "received")
+    .eq("type", "membership")
+    .eq("player_id", playerId)
+    .eq("period", period)
+    .maybeSingle();
+  if (findError) return { error: findError.message };
+
+  if (existing) {
+    const { error } = await supabase
+      .from("payments")
+      .update({
+        status: paid ? "paid" : "unpaid",
+        marked_by: admin.user.id,
+        paid_at: paid ? new Date().toISOString() : null,
+      })
+      .eq("id", existing.id);
+    if (error) return { error: error.message };
+  } else if (paid) {
+    const { data: player, error: playerError } = await supabase
+      .from("players")
+      .select("monthly_dues_amount")
+      .eq("id", playerId)
+      .single();
+    if (playerError) return { error: playerError.message };
+    if (!player?.monthly_dues_amount) {
+      return { error: "Set a monthly dues amount for them first." };
+    }
+
+    const { error } = await supabase.from("payments").insert({
+      direction: "received",
+      player_id: playerId,
+      type: "membership",
+      period,
+      amount: player.monthly_dues_amount,
+      method: "manual",
+      status: "paid",
+      paid_at: new Date().toISOString(),
+      marked_by: admin.user.id,
+    });
+    if (error) return { error: error.message };
+  }
+  // else: unchecking with no existing charge — nothing to do.
+
+  revalidatePath("/admin/players");
+  revalidatePath("/admin/payments");
+  revalidatePath("/admin");
+  revalidatePath("/dashboard");
   return {};
 }

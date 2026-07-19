@@ -4,27 +4,59 @@ import { useActionState, useEffect, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { FormField } from "@/components/form-field";
 import { CurrencyAmountInput } from "@/components/currency-amount-input";
+import { TypeaheadSelect } from "@/components/typeahead-select";
 import { createPayment, type PaymentFormState } from "@/lib/actions/payments";
 
 const initialState: PaymentFormState = {};
 
+type SelectedPlayer = { id: string; name: string; amount: string };
+
 export function AddPaymentForm({
   players,
   sessions,
+  duesByPlayerId,
   onSaved,
 }: {
   players: { id: string; name: string; is_guest: boolean }[];
   sessions: { id: string; title: string }[];
+  duesByPlayerId: Map<string, number | null>;
   onSaved?: () => void;
 }) {
   const [state, formAction] = useActionState(createPayment, initialState);
   const [direction, setDirection] = useState<"received" | "paid">("received");
   const [chargeType, setChargeType] = useState<"session_fee" | "membership">("session_fee");
+  const [selected, setSelected] = useState<SelectedPlayer[]>([]);
+  const [addKey, setAddKey] = useState(0);
 
   useEffect(() => {
     if (state.success) onSaved?.();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.success]);
+
+  const availablePlayers = players.filter((p) => !selected.some((s) => s.id === p.id));
+
+  function addPlayer(id: string) {
+    const player = players.find((p) => p.id === id);
+    if (!player) return;
+    const preset = duesByPlayerId.get(id);
+    setSelected((prev) => [
+      ...prev,
+      { id: player.id, name: player.name, amount: preset ? String(preset) : "" },
+    ]);
+    setAddKey((k) => k + 1); // remounts the typeahead so it clears
+  }
+
+  function removePlayer(id: string) {
+    setSelected((prev) => prev.filter((s) => s.id !== id));
+  }
+
+  function updateAmount(id: string, digitsOnly: string) {
+    setSelected((prev) => prev.map((s) => (s.id === id ? { ...s, amount: digitsOnly } : s)));
+  }
+
+  const entriesJson = JSON.stringify(
+    selected.filter((s) => Number(s.amount) > 0).map((s) => ({ player_id: s.id, amount: Number(s.amount) }))
+  );
 
   return (
     <form action={formAction} className="space-y-4">
@@ -43,25 +75,48 @@ export function AddPaymentForm({
 
       {direction === "received" ? (
         <>
-          <label className="block">
-            <span className="text-sm font-medium text-[var(--color-ink)]">Player</span>
-            <select
-              name="player_id"
-              required
-              defaultValue=""
-              className="mt-1.5 w-full rounded-[var(--radius-input)] border border-[var(--color-line)] bg-[var(--color-paper)] px-3.5 py-2.5 text-[var(--color-ink)] outline-none focus:border-[var(--color-court)]"
-            >
-              <option value="" disabled>
-                Select player…
-              </option>
-              {players.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                  {p.is_guest ? " (Guest)" : ""}
-                </option>
+          <div>
+            <span className="text-sm font-medium text-[var(--color-ink)]">Add people</span>
+            <div className="mt-1.5">
+              <TypeaheadSelect
+                key={addKey}
+                options={availablePlayers.map((p) => ({
+                  id: p.id,
+                  label: p.is_guest ? `${p.name} (Guest)` : p.name,
+                }))}
+                placeholder={availablePlayers.length === 0 ? "Everyone added" : "Type a name to add…"}
+                emptyMessage="No matching players"
+                onSelect={addPlayer}
+              />
+            </div>
+          </div>
+
+          {selected.length > 0 && (
+            <div className="overflow-hidden rounded-[var(--radius-input)] border border-[var(--color-line)]">
+              {selected.map((s, i) => (
+                <div
+                  key={s.id}
+                  className={`flex items-center gap-3 px-3 py-2.5 ${
+                    i !== selected.length - 1 ? "border-b border-[var(--color-line)]" : ""
+                  }`}
+                >
+                  <p className="min-w-0 flex-1 truncate text-sm text-[var(--color-ink)]">{s.name}</p>
+                  <div className="w-32 shrink-0">
+                    <AmountMiniInput value={s.amount} onChange={(v) => updateAmount(s.id, v)} />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => removePlayer(s.id)}
+                    aria-label={`Remove ${s.name}`}
+                    className="shrink-0 text-[var(--color-ink-muted)] hover:text-[var(--color-danger)]"
+                  >
+                    ✕
+                  </button>
+                </div>
               ))}
-            </select>
-          </label>
+            </div>
+          )}
+          <input type="hidden" name="entries" value={entriesJson} />
 
           <div>
             <span className="text-sm font-medium text-[var(--color-ink)]">Charge type</span>
@@ -107,7 +162,6 @@ export function AddPaymentForm({
             </label>
           )}
 
-          <CurrencyAmountInput name="amount" required />
           <FormField label="Received by" name="received_by" placeholder="Who took the payment?" />
         </>
       ) : (
@@ -127,6 +181,20 @@ export function AddPaymentForm({
 
       <SubmitButton />
     </form>
+  );
+}
+
+function AmountMiniInput({ value, onChange }: { value: string; onChange: (digits: string) => void }) {
+  const display = value ? Number(value).toLocaleString("en-US") : "";
+  return (
+    <input
+      type="text"
+      inputMode="numeric"
+      value={display}
+      placeholder="0"
+      onChange={(e) => onChange(e.target.value.replace(/[^\d]/g, ""))}
+      className="w-full rounded-[var(--radius-input)] border border-[var(--color-line)] bg-[var(--color-paper)] px-2.5 py-1.5 text-right font-[family-name:var(--font-mono)] text-sm text-[var(--color-ink)] outline-none focus:border-[var(--color-court)]"
+    />
   );
 }
 

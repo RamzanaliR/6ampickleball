@@ -8,9 +8,11 @@ import { AddPaymentForm } from "@/components/admin/add-payment-form";
 export function AddPaymentButton({
   players,
   sessions,
+  duesByPlayerId,
 }: {
   players: { id: string; name: string; is_guest: boolean }[];
   sessions: { id: string; title: string }[];
+  duesByPlayerId: Map<string, number | null>;
 }) {
   const [open, setOpen] = useState(false);
   const router = useRouter();
@@ -28,6 +30,7 @@ export function AddPaymentButton({
         <AddPaymentForm
           players={players}
           sessions={sessions}
+          duesByPlayerId={duesByPlayerId}
           onSaved={() => {
             setOpen(false);
             router.refresh();

@@ -16,10 +16,11 @@ export async function createPayment(
   if (!user) return { error: "Not authenticated" };
 
   const direction = String(formData.get("direction") ?? "received");
-  const amount = Number(formData.get("amount"));
-  if (!amount || amount <= 0) return { error: "Enter a valid amount." };
 
   if (direction === "paid") {
+    const amount = Number(formData.get("amount"));
+    if (!amount || amount <= 0) return { error: "Enter a valid amount." };
+
     const paidTo = String(formData.get("paid_to") ?? "").trim();
     const description = String(formData.get("description") ?? "").trim();
     const paidBy = String(formData.get("paid_by") ?? "").trim();
@@ -40,13 +41,12 @@ export async function createPayment(
 
     if (error) return { error: error.message };
   } else {
-    const playerId = String(formData.get("player_id") ?? "");
     const type = String(formData.get("type") ?? "");
     const sessionId = String(formData.get("session_id") ?? "") || null;
     const period = String(formData.get("period") ?? "").trim() || null;
     const receivedBy = String(formData.get("received_by") ?? "").trim();
+    const entriesRaw = String(formData.get("entries") ?? "[]");
 
-    if (!playerId) return { error: "Pick a player." };
     if (type !== "session_fee" && type !== "membership") {
       return { error: "Pick a charge type." };
     }
@@ -57,17 +57,35 @@ export async function createPayment(
       return { error: "Pick a month for a membership charge." };
     }
 
-    const { error } = await supabase.from("payments").insert({
-      direction: "received",
-      player_id: playerId,
-      type,
-      amount,
-      session_id: type === "session_fee" ? sessionId : null,
-      period: type === "membership" ? period : null,
-      received_by: receivedBy || null,
-      method: "manual",
-      status: "unpaid",
-    });
+    let entries: { player_id: string; amount: number }[] = [];
+    try {
+      const parsed = JSON.parse(entriesRaw);
+      if (Array.isArray(parsed)) {
+        entries = parsed
+          .filter((e) => e && typeof e.player_id === "string" && Number(e.amount) > 0)
+          .map((e) => ({ player_id: e.player_id, amount: Number(e.amount) }));
+      }
+    } catch {
+      // fall through — empty entries handled below
+    }
+
+    if (entries.length === 0) {
+      return { error: "Add at least one person with an amount." };
+    }
+
+    const { error } = await supabase.from("payments").insert(
+      entries.map((entry) => ({
+        direction: "received",
+        player_id: entry.player_id,
+        type,
+        amount: entry.amount,
+        session_id: type === "session_fee" ? sessionId : null,
+        period: type === "membership" ? period : null,
+        received_by: receivedBy || null,
+        method: "manual",
+        status: "unpaid",
+      }))
+    );
 
     if (error) return { error: error.message };
   }
@@ -78,12 +96,17 @@ export async function createPayment(
   return { success: true };
 }
 
-export async function setPaymentStatus(paymentId: string, status: "paid" | "unpaid") {
+export type SetPaymentStatusResult = { error?: string };
+
+export async function setPaymentStatus(
+  paymentId: string,
+  status: "paid" | "unpaid"
+): Promise<SetPaymentStatusResult> {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) throw new Error("Not authenticated");
+  if (!user) return { error: "Not authenticated" };
 
   const { error } = await supabase
     .from("payments")
@@ -94,8 +117,11 @@ export async function setPaymentStatus(paymentId: string, status: "paid" | "unpa
     })
     .eq("id", paymentId);
 
-  if (error) throw new Error(error.message);
+  if (error) return { error: error.message };
 
   revalidatePath("/admin/payments");
+  revalidatePath("/admin");
+  revalidatePath("/admin/players");
   revalidatePath("/dashboard");
+  return {};
 }

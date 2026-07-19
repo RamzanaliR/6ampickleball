@@ -58,6 +58,7 @@ export default async function AdminPaymentsPage({
   const paidMonth = params.paidMonth || currentDarMonth();
   const receivedRange = monthRange(receivedMonth);
   const paidRange = monthRange(paidMonth);
+  const statusFilter = params.status || "paid";
 
   let receivedQuery = supabase
     .from("payments")
@@ -67,9 +68,9 @@ export default async function AdminPaymentsPage({
     .lt("created_at", receivedRange.end)
     .order("created_at", { ascending: false });
 
+  if (statusFilter !== "all") receivedQuery = receivedQuery.eq("status", statusFilter);
   if (params.player) receivedQuery = receivedQuery.eq("player_id", params.player);
   if (params.session) receivedQuery = receivedQuery.eq("session_id", params.session);
-  if (params.status) receivedQuery = receivedQuery.eq("status", params.status);
   if (params.period) receivedQuery = receivedQuery.ilike("period", `%${params.period}%`);
 
   const paidQuery = supabase
@@ -86,13 +87,14 @@ export default async function AdminPaymentsPage({
       paidQuery,
       supabase
         .from("players")
-        .select("id, name, is_guest")
+        .select("id, name, is_guest, monthly_dues_amount")
         .eq("status", "approved")
         .order("name"),
       supabase.from("sessions").select("id, title").order("date_time", { ascending: false }),
     ]);
 
   const nameById = new Map((players ?? []).map((p) => [p.id, p.name]));
+  const duesByPlayerId = new Map((players ?? []).map((p) => [p.id, p.monthly_dues_amount]));
   const sessionTitleById = new Map((sessions ?? []).map((s) => [s.id, s.title]));
   const hasFilters = Boolean(params.player || params.session || params.status || params.period);
 
@@ -130,12 +132,12 @@ export default async function AdminPaymentsPage({
             </select>
             <select
               name="status"
-              defaultValue={params.status ?? ""}
+              defaultValue={statusFilter}
               className="rounded-[var(--radius-input)] border border-[var(--color-line)] bg-[var(--color-paper-raised)] px-3 py-2 text-sm text-[var(--color-ink)] outline-none focus:border-[var(--color-court)]"
             >
-              <option value="">All statuses</option>
               <option value="paid">Paid</option>
               <option value="unpaid">Unpaid</option>
+              <option value="all">All statuses</option>
             </select>
             <input
               name="period"
@@ -161,6 +163,7 @@ export default async function AdminPaymentsPage({
           <AddPaymentButton
             players={(players ?? []).map((p) => ({ id: p.id, name: p.name, is_guest: p.is_guest }))}
             sessions={sessions ?? []}
+            duesByPlayerId={duesByPlayerId}
           />
         </div>
 
@@ -191,6 +194,12 @@ export default async function AdminPaymentsPage({
               </div>
             </div>
             <div className="mt-4">
+              {statusFilter === "paid" && (
+                <p className="mb-3 text-xs text-[var(--color-ink-muted)]">
+                  Showing payments actually received — switch the Status filter to see pending
+                  charges.
+                </p>
+              )}
               {!received || received.length === 0 ? (
                 <EmptyState message="No payments this month." />
               ) : (

@@ -16,11 +16,8 @@ export function PaymentStatusToggle({
   function handle() {
     setError(null);
     startTransition(async () => {
-      try {
-        await setPaymentStatus(paymentId, status === "paid" ? "unpaid" : "paid");
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "Something went wrong");
-      }
+      const result = await setPaymentStatus(paymentId, status === "paid" ? "unpaid" : "paid");
+      if (result.error) setError(result.error);
     });
   }
 

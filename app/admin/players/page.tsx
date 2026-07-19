@@ -7,10 +7,11 @@ import { PendingApprovalsButton } from "@/components/admin/pending-approvals-but
 import { AddMemberButton } from "@/components/admin/add-member-button";
 import { RemoveMemberButton } from "@/components/admin/remove-member-button";
 import { RemoveGuestButton } from "@/components/admin/remove-guest-button";
-import { ToggleAdminButton } from "@/components/admin/toggle-admin-button";
 import { SetDuesButton } from "@/components/admin/set-dues-button";
+import { DuesPaidCheckbox } from "@/components/admin/dues-paid-checkbox";
 import { EditMemberButton } from "@/components/admin/edit-member-button";
 import { EditGuestButton } from "@/components/admin/edit-guest-button";
+import { currentDarMonth } from "@/lib/format";
 
 export default async function AdminPlayersPage() {
   const supabase = await createClient();
@@ -28,10 +29,13 @@ export default async function AdminPlayersPage() {
 
   if (me?.role !== "admin") redirect("/dashboard");
 
+  const period = currentDarMonth();
+
   const [
     { data: pending },
     { data: members, error: membersError },
     { data: guests, error: guestsError },
+    { data: duesThisMonth },
   ] = await Promise.all([
     supabase
       .from("players")
@@ -50,7 +54,17 @@ export default async function AdminPlayersPage() {
       .eq("is_guest", true)
       .eq("status", "approved")
       .order("name", { ascending: true }),
+    supabase
+      .from("payments")
+      .select("player_id, status")
+      .eq("direction", "received")
+      .eq("type", "membership")
+      .eq("period", period),
   ]);
+
+  const paidThisMonthByPlayerId = new Map(
+    (duesThisMonth ?? []).map((p) => [p.player_id, p.status === "paid"])
+  );
 
   return (
     <div>
@@ -63,7 +77,7 @@ export default async function AdminPlayersPage() {
           <AddMemberButton />
         </div>
 
-        <div className="mt-6 grid gap-8 md:grid-cols-2">
+        <div className="mt-6 grid gap-8 md:grid-cols-[2fr_1fr]">
           <section>
             <h2 className="font-[family-name:var(--font-display)] text-xl font-bold uppercase tracking-tight text-[var(--color-ink)]">
               Club members
@@ -90,6 +104,7 @@ export default async function AdminPlayersPage() {
                       <th className="px-5 py-2.5">Name</th>
                       <th className="px-5 py-2.5">DUPR ID</th>
                       <th className="px-5 py-2.5">Monthly dues</th>
+                      <th className="px-5 py-2.5">Paid</th>
                       <th className="px-5 py-2.5" />
                     </tr>
                   </thead>
@@ -114,6 +129,12 @@ export default async function AdminPlayersPage() {
                             currentAmount={p.monthly_dues_amount}
                           />
                         </td>
+                        <td className="px-5 py-2.5">
+                          <DuesPaidCheckbox
+                            playerId={p.id}
+                            initialChecked={paidThisMonthByPlayerId.get(p.id) ?? false}
+                          />
+                        </td>
                         <td className="px-5 py-2.5 text-right">
                           <div className="flex items-center justify-end gap-4">
                             <EditMemberButton
@@ -122,11 +143,6 @@ export default async function AdminPlayersPage() {
                               nickname={p.nickname}
                               phone={p.phone}
                               duprId={p.dupr_id}
-                            />
-                            <ToggleAdminButton
-                              playerId={p.id}
-                              playerName={p.name}
-                              isAdmin={p.role === "admin"}
                             />
                             <RemoveMemberButton playerId={p.id} playerName={p.name} />
                           </div>
