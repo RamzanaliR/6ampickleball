@@ -120,23 +120,39 @@ export default async function SessionDetailPage({
 
   const roundsContent = [...roundsMap.entries()]
     .sort(([a], [b]) => a - b)
-    .map(([roundNumber, roundMatches]) => ({
-      roundNumber,
-      content: (
-        <div className="grid gap-4 sm:grid-cols-2">
-          {roundMatches.map((m) => (
-            <ReadOnlyMatchCard
-              key={m.id}
-              courtNumber={m.court_number}
-              teamALabel={teamLabel(m.team_a)}
-              teamBLabel={teamLabel(m.team_b)}
-              sets={m.sets as MatchSet[]}
-              verified={m.verified}
-            />
-          ))}
-        </div>
-      ),
-    }));
+    .map(([roundNumber, roundMatches]) => {
+      const playingIds = new Set(roundMatches.flatMap((m) => [...m.team_a, ...m.team_b]));
+      const sittingOut = confirmedIds
+        .filter((pid) => !playingIds.has(pid))
+        .map((pid) => nameById.get(pid) ?? "Unknown")
+        .sort((a, b) => a.localeCompare(b));
+
+      return {
+        roundNumber,
+        content: (
+          <div>
+            {sittingOut.length > 0 && (
+              <p className="mb-4 text-sm text-[var(--color-ink-muted)]">
+                <span className="font-medium text-[var(--color-ink)]">Sitting out:</span>{" "}
+                {sittingOut.join(", ")}
+              </p>
+            )}
+            <div className="grid gap-4 sm:grid-cols-2">
+              {roundMatches.map((m) => (
+                <ReadOnlyMatchCard
+                  key={m.id}
+                  courtNumber={m.court_number}
+                  teamALabel={teamLabel(m.team_a)}
+                  teamBLabel={teamLabel(m.team_b)}
+                  sets={m.sets as MatchSet[]}
+                  verified={m.verified}
+                />
+              ))}
+            </div>
+          </div>
+        ),
+      };
+    });
 
   return (
     <div>

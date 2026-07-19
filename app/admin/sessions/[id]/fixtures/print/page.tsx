@@ -41,7 +41,14 @@ export default async function FixturesPrintPage({
     .order("court_number", { ascending: true });
   const matches = matchesData ?? [];
 
-  const playerIds = [...new Set(matches.flatMap((m) => [...m.team_a, ...m.team_b]))];
+  const { data: rsvps } = await supabase
+    .from("rsvps")
+    .select("player_id")
+    .eq("session_id", id)
+    .eq("status", "confirmed");
+  const confirmedIds = (rsvps ?? []).map((r) => r.player_id);
+
+  const playerIds = [...new Set([...confirmedIds, ...matches.flatMap((m) => [...m.team_a, ...m.team_b])])];
   const { data: playersData } = playerIds.length
     ? await supabase.from("players").select("id, name, nickname").in("id", playerIds)
     : { data: [] as { id: string; name: string; nickname: string | null }[] };
@@ -79,32 +86,47 @@ export default async function FixturesPrintPage({
         <p className="text-sm text-[var(--color-ink-muted)]">No fixtures generated yet.</p>
       ) : (
         <div className="space-y-6">
-          {rounds.map(([roundNumber, roundMatches]) => (
-            <div key={roundNumber} className="break-inside-avoid">
-              <p className="mb-2 font-[family-name:var(--font-mono)] text-sm font-semibold uppercase tracking-widest text-[var(--color-ink)]">
-                Round {roundNumber}
-              </p>
-              <div className="overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-line)] print:rounded-none">
-                {(roundMatches as typeof matches).map((m, i) => (
-                  <div
-                    key={m.id}
-                    className={`flex items-center gap-4 px-4 py-2.5 ${
-                      i !== roundMatches.length - 1 ? "border-b border-[var(--color-line)]" : ""
-                    }`}
-                  >
-                    <span className="w-16 shrink-0 text-xs font-medium uppercase tracking-wide text-[var(--color-ink-muted)]">
-                      Court {m.court_number}
-                    </span>
-                    <span className="text-sm text-[var(--color-ink)]">
-                      <span className="font-medium">{teamLabel(m.team_a)}</span>
-                      <span className="mx-2 text-[var(--color-ink-muted)]">vs</span>
-                      <span className="font-medium">{teamLabel(m.team_b)}</span>
-                    </span>
-                  </div>
-                ))}
+          {rounds.map(([roundNumber, roundMatches]) => {
+            const playingIds = new Set(
+              (roundMatches as typeof matches).flatMap((m) => [...m.team_a, ...m.team_b])
+            );
+            const sittingOut = confirmedIds
+              .filter((pid) => !playingIds.has(pid))
+              .map((pid) => nameById.get(pid) ?? "Unknown")
+              .sort((a, b) => a.localeCompare(b));
+
+            return (
+              <div key={roundNumber} className="break-inside-avoid">
+                <p className="mb-2 font-[family-name:var(--font-mono)] text-sm font-semibold uppercase tracking-widest text-[var(--color-ink)]">
+                  Round {roundNumber}
+                </p>
+                {sittingOut.length > 0 && (
+                  <p className="mb-2 text-xs text-[var(--color-ink-muted)]">
+                    Sitting out: {sittingOut.join(", ")}
+                  </p>
+                )}
+                <div className="overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-line)] print:rounded-none">
+                  {(roundMatches as typeof matches).map((m, i) => (
+                    <div
+                      key={m.id}
+                      className={`flex items-center gap-4 px-4 py-2.5 ${
+                        i !== roundMatches.length - 1 ? "border-b border-[var(--color-line)]" : ""
+                      }`}
+                    >
+                      <span className="w-16 shrink-0 text-xs font-medium uppercase tracking-wide text-[var(--color-ink-muted)]">
+                        Court {m.court_number}
+                      </span>
+                      <span className="text-sm text-[var(--color-ink)]">
+                        <span className="font-medium">{teamLabel(m.team_a)}</span>
+                        <span className="mx-2 text-[var(--color-ink-muted)]">vs</span>
+                        <span className="font-medium">{teamLabel(m.team_b)}</span>
+                      </span>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

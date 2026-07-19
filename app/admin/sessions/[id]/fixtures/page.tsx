@@ -109,38 +109,54 @@ export default async function SessionFixturesPage({
 
   const roundsContent = [...roundsMap.entries()]
     .sort(([a], [b]) => a - b)
-    .map(([roundNumber, roundMatches]) => ({
-      roundNumber,
-      content: (
-        <div className="grid gap-4 sm:grid-cols-2">
-          {roundMatches.map((m) => (
-            <div
-              key={m.id}
-              className="rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-paper-raised)] p-5"
-            >
-              <p className="font-[family-name:var(--font-mono)] text-xs uppercase tracking-widest text-[var(--color-ink-muted)]">
-                Court {m.court_number}
+    .map(([roundNumber, roundMatches]) => {
+      const playingIds = new Set(roundMatches.flatMap((m) => [...m.team_a, ...m.team_b]));
+      const sittingOut = confirmedIds
+        .filter((pid) => !playingIds.has(pid))
+        .map((pid) => nameById.get(pid) ?? "Unknown")
+        .sort((a, b) => a.localeCompare(b));
+
+      return {
+        roundNumber,
+        content: (
+          <div>
+            {sittingOut.length > 0 && (
+              <p className="mb-4 text-sm text-[var(--color-ink-muted)]">
+                <span className="font-medium text-[var(--color-ink)]">Sitting out:</span>{" "}
+                {sittingOut.join(", ")}
               </p>
-              <p className="mt-1 text-[var(--color-ink)]">
-                <span className="font-medium">{teamLabel(m.team_a)}</span>
-                <span className="mx-2 text-[var(--color-ink-muted)]">vs</span>
-                <span className="font-medium">{teamLabel(m.team_b)}</span>
-              </p>
-              <div className="mt-3">
-                <FixtureMatchScoreForm
-                  matchId={m.id}
-                  sessionId={id}
-                  teamALabel={teamLabel(m.team_a)}
-                  teamBLabel={teamLabel(m.team_b)}
-                  initialSets={m.sets as MatchSet[]}
-                  verified={m.verified}
-                />
-              </div>
+            )}
+            <div className="grid gap-4 sm:grid-cols-2">
+              {roundMatches.map((m) => (
+                <div
+                  key={m.id}
+                  className="rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-paper-raised)] p-5"
+                >
+                  <p className="font-[family-name:var(--font-mono)] text-xs uppercase tracking-widest text-[var(--color-ink-muted)]">
+                    Court {m.court_number}
+                  </p>
+                  <p className="mt-1 text-[var(--color-ink)]">
+                    <span className="font-medium">{teamLabel(m.team_a)}</span>
+                    <span className="mx-2 text-[var(--color-ink-muted)]">vs</span>
+                    <span className="font-medium">{teamLabel(m.team_b)}</span>
+                  </p>
+                  <div className="mt-3">
+                    <FixtureMatchScoreForm
+                      matchId={m.id}
+                      sessionId={id}
+                      teamALabel={teamLabel(m.team_a)}
+                      teamBLabel={teamLabel(m.team_b)}
+                      initialSets={m.sets as MatchSet[]}
+                      verified={m.verified}
+                    />
+                  </div>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-      ),
-    }));
+          </div>
+        ),
+      };
+    });
 
   return (
     <div>

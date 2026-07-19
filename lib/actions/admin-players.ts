@@ -214,3 +214,71 @@ export async function setAdminRole(playerId: string, makeAdmin: boolean) {
 
   revalidatePath("/admin/players");
 }
+
+export type UpdatePlayerDetailsState = { error?: string; success?: boolean };
+
+/** Admin edit of a club member's own profile details. */
+export async function updateMemberDetails(
+  playerId: string,
+  _prevState: UpdatePlayerDetailsState,
+  formData: FormData
+): Promise<UpdatePlayerDetailsState> {
+  const supabase = await createClient();
+  try {
+    await requireAdmin(supabase);
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Not authorized" };
+  }
+
+  const name = String(formData.get("name") ?? "").trim();
+  const nickname = String(formData.get("nickname") ?? "").trim();
+  const phone = String(formData.get("phone") ?? "").trim();
+  const duprId = String(formData.get("dupr_id") ?? "").trim();
+
+  if (!name) return { error: "Name is required." };
+
+  const { error } = await supabase
+    .from("players")
+    .update({
+      name,
+      nickname: nickname || null,
+      phone: phone || null,
+      dupr_id: duprId || null,
+    })
+    .eq("id", playerId);
+  if (error) return { error: error.message };
+
+  revalidatePath("/admin/players");
+  revalidatePath("/leaderboard");
+  revalidatePath("/feed");
+  return { success: true };
+}
+
+/** Admin edit of a guest's details (name + DUPR only — guests have no account). */
+export async function updateGuestDetails(
+  playerId: string,
+  _prevState: UpdatePlayerDetailsState,
+  formData: FormData
+): Promise<UpdatePlayerDetailsState> {
+  const supabase = await createClient();
+  try {
+    await requireAdmin(supabase);
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Not authorized" };
+  }
+
+  const name = String(formData.get("name") ?? "").trim();
+  const duprId = String(formData.get("dupr_id") ?? "").trim();
+
+  if (!name) return { error: "Name is required." };
+
+  const { error } = await supabase
+    .from("players")
+    .update({ name, dupr_id: duprId || null })
+    .eq("id", playerId)
+    .eq("is_guest", true);
+  if (error) return { error: error.message };
+
+  revalidatePath("/admin/players");
+  return { success: true };
+}

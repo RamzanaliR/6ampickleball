@@ -9,6 +9,8 @@ import { RemoveMemberButton } from "@/components/admin/remove-member-button";
 import { RemoveGuestButton } from "@/components/admin/remove-guest-button";
 import { ToggleAdminButton } from "@/components/admin/toggle-admin-button";
 import { SetDuesButton } from "@/components/admin/set-dues-button";
+import { EditMemberButton } from "@/components/admin/edit-member-button";
+import { EditGuestButton } from "@/components/admin/edit-guest-button";
 
 export default async function AdminPlayersPage() {
   const supabase = await createClient();
@@ -38,7 +40,7 @@ export default async function AdminPlayersPage() {
       .order("created_at", { ascending: true }),
     supabase
       .from("players")
-      .select("id, name, dupr_id, role, monthly_dues_amount")
+      .select("id, name, nickname, phone, dupr_id, role, monthly_dues_amount")
       .eq("status", "approved")
       .eq("is_guest", false)
       .order("name", { ascending: true }),
@@ -114,6 +116,13 @@ export default async function AdminPlayersPage() {
                         </td>
                         <td className="px-5 py-2.5 text-right">
                           <div className="flex items-center justify-end gap-4">
+                            <EditMemberButton
+                              playerId={p.id}
+                              name={p.name}
+                              nickname={p.nickname}
+                              phone={p.phone}
+                              duprId={p.dupr_id}
+                            />
                             <ToggleAdminButton
                               playerId={p.id}
                               playerName={p.name}
@@ -162,7 +171,10 @@ export default async function AdminPlayersPage() {
                           {p.dupr_id ?? "—"}
                         </td>
                         <td className="px-5 py-2.5 text-right">
-                          <RemoveGuestButton playerId={p.id} playerName={p.name} />
+                          <div className="flex items-center justify-end gap-4">
+                            <EditGuestButton playerId={p.id} name={p.name} duprId={p.dupr_id} />
+                            <RemoveGuestButton playerId={p.id} playerName={p.name} />
+                          </div>
                         </td>
                       </tr>
                     ))}
