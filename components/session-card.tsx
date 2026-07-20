@@ -1,11 +1,21 @@
+import Link from "next/link";
 import { formatSessionDate, formatSessionTime } from "@/lib/format";
 import { RsvpButton } from "@/components/rsvp-button";
 import { WhatsAppShareButton } from "@/components/whatsapp-share-button";
 import { AddGuestModal } from "@/components/add-guest-modal";
 import { NoShowModal } from "@/components/no-show-modal";
-import Link from "next/link";
+import { ViewGuestsModal } from "@/components/view-guests-modal";
 
 type RsvpState = "confirmed" | "waitlisted" | "none";
+
+function confirmedColumnCount(count: number) {
+  if (count <= 9) return 1;
+  if (count <= 18) return 2;
+  return 3;
+}
+
+const secondaryButtonClass =
+  "block w-full rounded-[var(--radius-pill)] border border-[var(--color-line)] px-4 py-2 text-center text-sm font-medium text-[var(--color-ink)] transition-colors hover:border-[var(--color-court)] hover:text-[var(--color-court)]";
 
 export function SessionCard({
   session,
@@ -14,6 +24,7 @@ export function SessionCard({
   confirmedNames,
   isStaff = false,
   knownGuestNames = [],
+  variant = "upcoming",
 }: {
   session: {
     id: string;
@@ -28,75 +39,120 @@ export function SessionCard({
   confirmedNames?: string[];
   isStaff?: boolean;
   knownGuestNames?: string[];
+  variant?: "upcoming" | "current";
 }) {
   const full = spotsLeft <= 0;
+  const names = confirmedNames ?? [];
+  const columns = confirmedColumnCount(names.length);
 
   return (
     <div className="rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-paper-raised)] p-6">
-      <div className="flex items-start justify-between gap-4">
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-[1fr_190px]">
+        {/* Left: session info */}
         <div>
-          <p className="font-[family-name:var(--font-mono)] text-xs uppercase tracking-widest text-[var(--color-court)]">
-            {formatSessionDate(session.date_time)} · {formatSessionTime(session.date_time)}
-          </p>
-          <h3 className="mt-1 font-[family-name:var(--font-display)] text-2xl font-bold uppercase tracking-tight text-[var(--color-ink)]">
-            {session.title}
-          </h3>
-          <p className="mt-1 text-sm text-[var(--color-ink-muted)]">{session.location}</p>
-          {!session.counts_toward_leaderboard && (
-            <p className="mt-1 text-xs text-[var(--color-ink-muted)]">
-              Doesn&apos;t count toward the season leaderboard
-            </p>
+          <Link href={`/sessions/${session.id}`} className="block">
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="font-[family-name:var(--font-mono)] text-xs uppercase tracking-widest text-[var(--color-court)]">
+                {formatSessionDate(session.date_time)} · {formatSessionTime(session.date_time)}
+              </p>
+              {variant === "current" && (
+                <span className="rounded-[var(--radius-pill)] bg-[var(--color-court)] px-3 py-0.5 text-xs font-semibold text-white">
+                  Fixtures live
+                </span>
+              )}
+            </div>
+            <h3 className="mt-1 font-[family-name:var(--font-display)] text-2xl font-bold uppercase tracking-tight text-[var(--color-ink)] hover:text-[var(--color-court)]">
+              {session.title}
+            </h3>
+            <p className="mt-1 text-sm text-[var(--color-ink-muted)]">{session.location}</p>
+            {!session.counts_toward_leaderboard && (
+              <p className="mt-1 text-xs text-[var(--color-ink-muted)]">
+                Doesn&apos;t count toward the season leaderboard
+              </p>
+            )}
+          </Link>
+
+          {names.length > 0 && (
+            <div className="mt-4">
+              <p className="text-xs font-medium text-[var(--color-ink)]">Confirmed:</p>
+              <div
+                className="mt-1.5 gap-x-6 text-xs text-[var(--color-ink-muted)]"
+                style={{ columns }}
+              >
+                {names.map((name) => (
+                  <p key={name} className="break-inside-avoid py-0.5">
+                    {name}
+                  </p>
+                ))}
+              </div>
+            </div>
           )}
         </div>
-        {myStatus !== "none" && (
-          <span
-            className={
-              myStatus === "confirmed"
-                ? "shrink-0 rounded-[var(--radius-pill)] bg-[var(--color-court)] px-3 py-1 text-xs font-semibold text-white"
-                : "shrink-0 rounded-[var(--radius-pill)] border border-[var(--color-ball)] bg-[var(--color-ball)]/30 px-3 py-1 text-xs font-semibold text-[var(--color-ink)]"
-            }
-          >
-            {myStatus === "confirmed" ? "You're in" : "Waitlisted"}
-          </span>
-        )}
-      </div>
 
-      <div className="kitchen-line mt-4 flex items-center justify-between pt-4">
-        <p className="font-[family-name:var(--font-mono)] text-sm text-[var(--color-ink-muted)]">
-          {full ? "Full — waitlist open" : `${spotsLeft} of ${session.capacity} spots left`}
-        </p>
-      </div>
+        {/* Right: action stack */}
+        <div className="flex flex-col gap-2">
+          <div>
+            <RsvpButton sessionId={session.id} initialStatus={myStatus} full={full} />
+            {variant === "upcoming" && (
+              <p className="mt-1.5 text-center font-[family-name:var(--font-mono)] text-xs text-[var(--color-ink-muted)]">
+                {full ? "Full — waitlist open" : `${spotsLeft} of ${session.capacity} spots left`}
+              </p>
+            )}
+          </div>
 
-      {confirmedNames && confirmedNames.length > 0 && (
-        <p className="mt-3 text-xs text-[var(--color-ink-muted)]">
-          <span className="font-medium text-[var(--color-ink)]">Confirmed:</span>{" "}
-          {confirmedNames.join(", ")}
-        </p>
-      )}
+          {/* Add guest / View fixtures slot */}
+          {isStaff ? (
+            <AddGuestModal
+              sessionId={session.id}
+              knownGuestNames={knownGuestNames}
+              triggerLabel="Add Guests"
+              triggerClassName={secondaryButtonClass}
+            />
+          ) : (
+            variant === "current" && (
+              <Link href={`/sessions/${session.id}`} className={secondaryButtonClass}>
+                View Fixtures
+              </Link>
+            )
+          )}
 
-      <div className="mt-4 flex items-center gap-3">
-        <div className="flex-1">
-          <RsvpButton sessionId={session.id} initialStatus={myStatus} full={full} />
+          {/* Generate fixtures / View guests slot (staff only) */}
+          {isStaff &&
+            (variant === "upcoming" ? (
+              <Link href={`/admin/sessions/${session.id}/fixtures`} className={secondaryButtonClass}>
+                Generate Fixtures
+              </Link>
+            ) : (
+              <ViewGuestsModal sessionId={session.id} triggerClassName={secondaryButtonClass} />
+            ))}
+
+          {isStaff && (
+            <div className="mt-1 flex items-center gap-2">
+              <NoShowModal
+                sessionId={session.id}
+                triggerLabel="No-show"
+                triggerClassName={`${secondaryButtonClass} flex-1`}
+              />
+              <WhatsAppShareButton
+                title={session.title}
+                dateTime={session.date_time}
+                location={session.location}
+                iconOnly
+              />
+            </div>
+          )}
+          {!isStaff && (
+            <div className="mt-1 flex justify-end">
+              <WhatsAppShareButton
+                title={session.title}
+                dateTime={session.date_time}
+                location={session.location}
+                iconOnly
+              />
+            </div>
+          )}
         </div>
-        <WhatsAppShareButton
-          title={session.title}
-          dateTime={session.date_time}
-          location={session.location}
-        />
       </div>
-
-      {isStaff && (
-        <div className="kitchen-line mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 pt-3">
-          <AddGuestModal sessionId={session.id} knownGuestNames={knownGuestNames} />
-          <Link
-            href={`/admin/sessions/${session.id}/fixtures`}
-            className="text-xs font-medium text-[var(--color-ink-muted)] hover:text-[var(--color-court)]"
-          >
-            Fixtures
-          </Link>
-          <NoShowModal sessionId={session.id} />
-        </div>
-      )}
     </div>
   );
 }

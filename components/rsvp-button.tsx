@@ -5,6 +5,20 @@ import { cancelRsvp, rsvpToSession } from "@/lib/actions/rsvp";
 
 type RsvpState = "confirmed" | "waitlisted" | "none";
 
+function CheckIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path
+        d="M3.5 8.5l3 3 6-6.5"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 export function RsvpButton({
   sessionId,
   initialStatus,
@@ -42,6 +56,7 @@ export function RsvpButton({
           : "I'm in";
 
   const isCancelStyle = initialStatus !== "none";
+  const showCheck = label === "I'm in" || label === "Cancel";
 
   return (
     <div>
@@ -54,7 +69,16 @@ export function RsvpButton({
             : "w-full rounded-[var(--radius-pill)] bg-[var(--color-court)] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[var(--color-court-dark)] disabled:opacity-60"
         }
       >
-        {isPending ? "…" : label}
+        <span className="inline-flex items-center justify-center gap-1.5">
+          {isPending ? (
+            "…"
+          ) : (
+            <>
+              {showCheck && <CheckIcon />}
+              {label}
+            </>
+          )}
+        </span>
       </button>
       {error && <p className="mt-1.5 text-xs text-[var(--color-danger)]">{error}</p>}
     </div>

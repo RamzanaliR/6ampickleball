@@ -34,6 +34,49 @@ export async function addGuestToSession(
   return { success: true };
 }
 
+export type SessionGuestEntry = { name: string; duprId: string | null };
+export type GetSessionGuestRosterResult = { error?: string; guests?: SessionGuestEntry[] };
+
+/** Read-only list of guests (not members) confirmed for a session — for the "View Guests" popup. */
+export async function getSessionGuestRoster(sessionId: string): Promise<GetSessionGuestRosterResult> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  const { data: me } = await supabase
+    .from("players")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+  if (me?.role !== "admin" && me?.role !== "manager") {
+    return { error: "Admins and managers only" };
+  }
+
+  const { data: rsvps, error } = await supabase
+    .from("rsvps")
+    .select("player_id")
+    .eq("session_id", sessionId)
+    .eq("status", "confirmed");
+  if (error) return { error: error.message };
+
+  const playerIds = (rsvps ?? []).map((r) => r.player_id);
+  const { data: guestsData } = playerIds.length
+    ? await supabase
+        .from("players")
+        .select("name, dupr_id")
+        .in("id", playerIds)
+        .eq("is_guest", true)
+    : { data: [] as { name: string; dupr_id: string | null }[] };
+
+  const guests = (guestsData ?? [])
+    .map((g) => ({ name: g.name, duprId: g.dupr_id }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+  return { guests };
+}
+
 export type AddGuestNamesState = { error?: string; addedCount?: number };
 
 /**

@@ -4,8 +4,6 @@ import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/page-header";
 import { EmptyState } from "@/components/empty-state";
 import { SessionCard } from "@/components/session-card";
-import { AddGuestModal } from "@/components/add-guest-modal";
-import { NoShowModal } from "@/components/no-show-modal";
 import { formatSessionDate, formatSessionTime, displayName } from "@/lib/format";
 
 type RsvpState = "confirmed" | "waitlisted" | "none";
@@ -136,53 +134,16 @@ export default async function SessionsPage() {
               ) : (
                 <div className="space-y-4">
                   {current.map((s) => (
-                    <div
+                    <SessionCard
                       key={s.id}
-                      className="rounded-[var(--radius-card)] border border-[var(--color-court)] bg-[var(--color-paper-raised)] p-6"
-                    >
-                      <Link href={`/sessions/${s.id}`} className="block transition-colors">
-                        <div className="flex items-start justify-between gap-4">
-                          <div>
-                            <p className="font-[family-name:var(--font-mono)] text-xs uppercase tracking-widest text-[var(--color-court)]">
-                              {formatSessionDate(s.date_time)} · {formatSessionTime(s.date_time)}
-                            </p>
-                            <h3 className="mt-1 font-[family-name:var(--font-display)] text-2xl font-bold uppercase tracking-tight text-[var(--color-ink)]">
-                              {s.title}
-                            </h3>
-                            <p className="mt-1 text-sm text-[var(--color-ink-muted)]">{s.location}</p>
-                          </div>
-                          <span className="shrink-0 rounded-[var(--radius-pill)] bg-[var(--color-court)] px-3 py-1 text-xs font-semibold text-white">
-                            Fixtures live
-                          </span>
-                        </div>
-                        {!s.counts_toward_leaderboard && (
-                          <p className="mt-2 text-xs text-[var(--color-ink-muted)]">
-                            Doesn&apos;t count toward the season leaderboard
-                          </p>
-                        )}
-                        {(confirmedNamesBySession.get(s.id) ?? []).length > 0 && (
-                          <p className="mt-2 text-xs text-[var(--color-ink-muted)]">
-                            <span className="font-medium text-[var(--color-ink)]">Confirmed:</span>{" "}
-                            {(confirmedNamesBySession.get(s.id) ?? []).join(", ")}
-                          </p>
-                        )}
-                        <p className="mt-4 text-sm font-medium text-[var(--color-court)]">
-                          View fixtures &amp; standings →
-                        </p>
-                      </Link>
-                      {isStaff && (
-                        <div className="kitchen-line mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 pt-3">
-                          <AddGuestModal sessionId={s.id} knownGuestNames={knownGuestNames} />
-                          <Link
-                            href={`/admin/sessions/${s.id}/fixtures`}
-                            className="text-xs font-medium text-[var(--color-ink-muted)] hover:text-[var(--color-court)]"
-                          >
-                            Fixtures
-                          </Link>
-                          <NoShowModal sessionId={s.id} />
-                        </div>
-                      )}
-                    </div>
+                      session={s}
+                      spotsLeft={0}
+                      myStatus={myStatusBySession.get(s.id) ?? "none"}
+                      confirmedNames={confirmedNamesBySession.get(s.id) ?? []}
+                      isStaff={isStaff}
+                      knownGuestNames={knownGuestNames}
+                      variant="current"
+                    />
                   ))}
                 </div>
               )}
