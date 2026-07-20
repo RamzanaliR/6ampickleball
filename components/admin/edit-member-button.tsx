@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Modal } from "@/components/modal";
 import { FormField } from "@/components/form-field";
 import { updateMemberDetails } from "@/lib/actions/admin-players";
+import { ResetPasswordButton } from "@/components/admin/reset-password-button";
 
 export function EditMemberButton({
   playerId,
@@ -12,12 +13,14 @@ export function EditMemberButton({
   nickname,
   phone,
   duprId,
+  isAdmin = false,
 }: {
   playerId: string;
   name: string;
   nickname: string | null;
   phone: string | null;
   duprId: string | null;
+  isAdmin?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -59,22 +62,25 @@ export function EditMemberButton({
             </p>
           )}
 
-          <div className="flex gap-2">
-            <button
-              type="submit"
-              disabled={isPending}
-              className="rounded-[var(--radius-pill)] bg-[var(--color-court)] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[var(--color-court-dark)] disabled:opacity-60"
-            >
-              {isPending ? "Saving…" : "Save"}
-            </button>
-            <button
-              type="button"
-              onClick={() => setOpen(false)}
-              disabled={isPending}
-              className="rounded-[var(--radius-pill)] border border-[var(--color-line)] px-4 py-2 text-sm font-medium text-[var(--color-ink)]"
-            >
-              Cancel
-            </button>
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex gap-2">
+              <button
+                type="submit"
+                disabled={isPending}
+                className="rounded-[var(--radius-pill)] bg-[var(--color-court)] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[var(--color-court-dark)] disabled:opacity-60"
+              >
+                {isPending ? "Saving…" : "Save"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                disabled={isPending}
+                className="rounded-[var(--radius-pill)] border border-[var(--color-line)] px-4 py-2 text-sm font-medium text-[var(--color-ink)]"
+              >
+                Cancel
+              </button>
+            </div>
+            {isAdmin && <ResetPasswordButton playerId={playerId} playerName={name} />}
           </div>
         </form>
       </Modal>

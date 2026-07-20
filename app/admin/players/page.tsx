@@ -11,7 +11,6 @@ import { SetDuesButton } from "@/components/admin/set-dues-button";
 import { DuesPaidCheckbox } from "@/components/admin/dues-paid-checkbox";
 import { EditMemberButton } from "@/components/admin/edit-member-button";
 import { EditGuestButton } from "@/components/admin/edit-guest-button";
-import { ResetPasswordButton } from "@/components/admin/reset-password-button";
 import { RoleSelectButton } from "@/components/admin/role-select-button";
 import { currentDarMonth } from "@/lib/format";
 
@@ -110,6 +109,7 @@ export default async function AdminPlayersPage() {
                       <th className="px-5 py-2.5">DUPR ID</th>
                       <th className="px-5 py-2.5">Monthly dues</th>
                       <th className="px-5 py-2.5">Paid</th>
+                      <th className="px-5 py-2.5">Role</th>
                       <th className="px-5 py-2.5" />
                     </tr>
                   </thead>
@@ -118,11 +118,6 @@ export default async function AdminPlayersPage() {
                       <tr key={p.id} className={i !== members.length - 1 ? "kitchen-line" : ""}>
                         <td className="px-5 py-2.5 text-sm font-medium text-[var(--color-ink)]">
                           {p.name}
-                          {(p.role === "admin" || p.role === "manager") && (
-                            <span className="ml-2 rounded-[var(--radius-pill)] bg-[var(--color-court)]/10 px-2 py-0.5 text-[10px] font-semibold text-[var(--color-court)]">
-                              {p.role === "admin" ? "Admin" : "Manager"}
-                            </span>
-                          )}
                         </td>
                         <td className="px-5 py-2.5 font-[family-name:var(--font-mono)] text-sm text-[var(--color-ink-muted)]">
                           {p.dupr_id ?? "—"}
@@ -148,6 +143,19 @@ export default async function AdminPlayersPage() {
                             "—"
                           )}
                         </td>
+                        <td className="px-5 py-2.5">
+                          {isAdmin ? (
+                            <RoleSelectButton
+                              playerId={p.id}
+                              playerName={p.name}
+                              currentRole={p.role}
+                            />
+                          ) : (
+                            <span className="text-xs font-medium text-[var(--color-ink-muted)]">
+                              {p.role === "admin" ? "Admin" : p.role === "manager" ? "Manager" : "Player"}
+                            </span>
+                          )}
+                        </td>
                         <td className="px-5 py-2.5 text-right">
                           <div className="flex items-center justify-end gap-4">
                             <EditMemberButton
@@ -156,17 +164,10 @@ export default async function AdminPlayersPage() {
                               nickname={p.nickname}
                               phone={p.phone}
                               duprId={p.dupr_id}
+                              isAdmin={isAdmin}
                             />
                             {isAdmin && (
-                              <>
-                                <RoleSelectButton
-                                  playerId={p.id}
-                                  playerName={p.name}
-                                  currentRole={p.role}
-                                />
-                                <ResetPasswordButton playerId={p.id} playerName={p.name} />
-                                <RemoveMemberButton playerId={p.id} playerName={p.name} />
-                              </>
+                              <RemoveMemberButton playerId={p.id} playerName={p.name} />
                             )}
                           </div>
                         </td>
