@@ -9,10 +9,17 @@ const tabs = [
   { href: "/admin/feed", label: "The Club" },
 ];
 
-export function AdminTabs({ active }: { active: string }) {
+// Managers only get the tabs that lead to pages they actually have
+// access to — Tournaments, Finances, and anything else stays
+// admin-only and simply isn't shown as a tab.
+const managerTabHrefs = new Set(["/admin", "/admin/players", "/admin/sessions", "/admin/feed"]);
+
+export function AdminTabs({ active, role }: { active: string; role?: "admin" | "manager" }) {
+  const visibleTabs = role === "manager" ? tabs.filter((t) => managerTabHrefs.has(t.href)) : tabs;
+
   return (
     <div className="kitchen-line flex flex-wrap gap-x-6 gap-y-3 pb-4">
-      {tabs.map((tab) => (
+      {visibleTabs.map((tab) => (
         <Link
           key={tab.href}
           href={tab.href}

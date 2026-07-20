@@ -32,7 +32,7 @@ export default async function SessionFixturesPage({
     .eq("id", user.id)
     .single();
 
-  if (me?.role !== "admin") redirect("/dashboard");
+  if (me?.role !== "admin" && me?.role !== "manager") redirect("/dashboard");
 
   const { data: session } = await supabase
     .from("sessions")
@@ -162,7 +162,7 @@ export default async function SessionFixturesPage({
     <div>
       <PageHeader eyebrow="Admin" title={`Fixtures — ${session.title}`} />
       <div className="mx-auto mt-8 max-w-6xl px-6 pb-16">
-        <AdminTabs active="/admin/sessions" />
+        <AdminTabs active="/admin/sessions" role={me?.role === "manager" ? "manager" : "admin"} />
 
         {rsvpsError && (
           <div className="mt-6 rounded-[var(--radius-card)] border border-[var(--color-danger)] bg-[var(--color-danger-bg)] p-5">
@@ -228,15 +228,17 @@ export default async function SessionFixturesPage({
               </Link>
             </div>
 
-            <RegenerateFixturesPanel
-              sessionId={id}
-              confirmedPlayers={(confirmedPlayers ?? []).map((p) => ({
-                id: p.id,
-                name: p.name,
-                noShow: noShowByPlayerId.get(p.id) ?? false,
-              }))}
-              settings={settings}
-            />
+            {me?.role === "admin" && (
+              <RegenerateFixturesPanel
+                sessionId={id}
+                confirmedPlayers={(confirmedPlayers ?? []).map((p) => ({
+                  id: p.id,
+                  name: p.name,
+                  noShow: noShowByPlayerId.get(p.id) ?? false,
+                }))}
+                settings={settings}
+              />
+            )}
 
             <div className="grid gap-8 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.3fr)]">
               <section>

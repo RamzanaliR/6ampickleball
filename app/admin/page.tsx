@@ -20,7 +20,7 @@ export default async function AdminPage() {
     .eq("id", user.id)
     .single();
 
-  if (player?.role !== "admin") redirect("/dashboard");
+  if (player?.role !== "admin" && player?.role !== "manager") redirect("/dashboard");
 
   const period = currentDarMonth();
 
@@ -68,9 +68,9 @@ export default async function AdminPage() {
     <div>
       <PageHeader eyebrow="Admin" title="Club control room" />
       <div className="mx-auto mt-8 max-w-6xl px-6 pb-16">
-        <AdminTabs active="/admin" />
+        <AdminTabs active="/admin" role={player?.role === "manager" ? "manager" : "admin"} />
 
-        {duesMonth?.status !== "charged" && (
+        {player?.role === "admin" && duesMonth?.status !== "charged" && (
           <DuesReminderCard
             period={period}
             monthLabel={formatMonthLabel(period)}
@@ -89,11 +89,13 @@ export default async function AdminPage() {
             value={upcomingCount ?? 0}
             href="/admin/sessions"
           />
-          <StatCard
-            label="Unpaid dues"
-            value={unpaidCount ?? 0}
-            href="/admin/payments?status=unpaid"
-          />
+          {player?.role === "admin" && (
+            <StatCard
+              label="Unpaid dues"
+              value={unpaidCount ?? 0}
+              href="/admin/payments?status=unpaid"
+            />
+          )}
           <StatCard
             label="Posts to review"
             value={pendingFeedCount ?? 0}

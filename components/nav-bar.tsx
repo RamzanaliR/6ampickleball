@@ -9,7 +9,7 @@ import { createClient } from "@/lib/supabase/client";
 type NavUser = {
   name: string;
   status: "pending" | "approved" | "rejected";
-  role: "player" | "admin";
+  role: "player" | "manager" | "admin";
 } | null;
 
 const baseLinks = [
@@ -35,7 +35,7 @@ export function NavBar({ user }: { user: NavUser }) {
   const links = [
     { href: "/dashboard", label: "Dashboard" },
     ...baseLinks,
-    ...(user?.role === "admin" ? [{ href: "/admin", label: "Admin" }] : []),
+    ...(user?.role === "admin" || user?.role === "manager" ? [{ href: "/admin", label: "Admin" }] : []),
   ];
 
   // Signed-in: logo always goes to the marketing one-pager (not "/",

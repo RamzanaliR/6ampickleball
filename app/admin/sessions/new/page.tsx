@@ -24,7 +24,7 @@ export default async function NewSessionPage({
     .eq("id", user.id)
     .single();
 
-  if (me?.role !== "admin") redirect("/dashboard");
+  if (me?.role !== "admin" && me?.role !== "manager") redirect("/dashboard");
 
   const { data: tournaments } = await supabase
     .from("tournaments")
@@ -35,7 +35,7 @@ export default async function NewSessionPage({
     <div>
       <PageHeader eyebrow="Admin" title="New session" />
       <div className="mx-auto mt-8 max-w-6xl px-6 pb-16">
-        <AdminTabs active="/admin/sessions" />
+        <AdminTabs active="/admin/sessions" role={me?.role === "manager" ? "manager" : "admin"} />
         <div className="mt-6 max-w-lg rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-paper-raised)] p-6">
           <SessionForm
             action={createSession}

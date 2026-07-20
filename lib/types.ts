@@ -1,6 +1,6 @@
 export type SkillTier = "beginner" | "intermediate" | "advanced";
 export type PlayerStatus = "pending" | "approved" | "rejected";
-export type PlayerRole = "player" | "admin";
+export type PlayerRole = "player" | "manager" | "admin";
 
 export interface Player {
   id: string;

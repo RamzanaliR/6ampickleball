@@ -28,7 +28,7 @@ export default async function AdminSessionsPage() {
     .eq("id", user.id)
     .single();
 
-  if (me?.role !== "admin") redirect("/dashboard");
+  if (me?.role !== "admin" && me?.role !== "manager") redirect("/dashboard");
 
   const { data: sessions } = await supabase
     .from("sessions")
@@ -41,7 +41,7 @@ export default async function AdminSessionsPage() {
     <div>
       <PageHeader eyebrow="Admin" title="Sessions" />
       <div className="mx-auto mt-8 max-w-6xl px-6 pb-16">
-        <AdminTabs active="/admin/sessions" />
+        <AdminTabs active="/admin/sessions" role={me?.role === "manager" ? "manager" : "admin"} />
 
         <div className="mt-6 flex justify-end">
           <Link
@@ -98,20 +98,26 @@ export default async function AdminSessionsPage() {
                     >
                       Fixtures
                     </Link>
-                    <Link
-                      href={`/admin/sessions/${s.id}/edit`}
-                      className="text-sm font-medium text-[var(--color-ink)] hover:text-[var(--color-court)]"
-                    >
-                      Edit
-                    </Link>
+                    {me?.role === "admin" && (
+                      <Link
+                        href={`/admin/sessions/${s.id}/edit`}
+                        className="text-sm font-medium text-[var(--color-ink)] hover:text-[var(--color-court)]"
+                      >
+                        Edit
+                      </Link>
+                    )}
                     <Link
                       href={`/admin/sessions/${s.id}/no-shows`}
                       className="text-sm font-medium text-[var(--color-ink)] hover:text-[var(--color-court)]"
                     >
                       No-shows
                     </Link>
-                    <SessionQuickActions sessionId={s.id} status={s.status} />
-                    <SessionDeleteButton sessionId={s.id} />
+                    {me?.role === "admin" && (
+                      <>
+                        <SessionQuickActions sessionId={s.id} status={s.status} />
+                        <SessionDeleteButton sessionId={s.id} />
+                      </>
+                    )}
                   </div>
                 </div>
               ))}

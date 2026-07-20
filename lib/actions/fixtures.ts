@@ -4,22 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { generateClassicRobin, winningTeamFromSets } from "@/lib/fixtures/generate-classic-robin";
 import type { FixtureSettings, MatchSet } from "@/lib/types";
-
-async function requireAdmin(supabase: Awaited<ReturnType<typeof createClient>>) {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("Not authenticated");
-
-  const { data: player } = await supabase
-    .from("players")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-
-  if (player?.role !== "admin") throw new Error("Admins only");
-  return user.id;
-}
+import { requireAdminId as requireAdmin, requireStaffId } from "@/lib/auth/roles";
 
 export type GenerateFixturesState = { error?: string };
 
@@ -31,7 +16,7 @@ export async function generateFixtures(
   const supabase = await createClient();
   let adminId: string;
   try {
-    adminId = await requireAdmin(supabase);
+    adminId = await requireStaffId(supabase);
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Not authorized" };
   }

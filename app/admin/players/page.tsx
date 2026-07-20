@@ -12,6 +12,7 @@ import { DuesPaidCheckbox } from "@/components/admin/dues-paid-checkbox";
 import { EditMemberButton } from "@/components/admin/edit-member-button";
 import { EditGuestButton } from "@/components/admin/edit-guest-button";
 import { ResetPasswordButton } from "@/components/admin/reset-password-button";
+import { RoleSelectButton } from "@/components/admin/role-select-button";
 import { currentDarMonth } from "@/lib/format";
 
 export default async function AdminPlayersPage() {
@@ -28,7 +29,8 @@ export default async function AdminPlayersPage() {
     .eq("id", user.id)
     .single();
 
-  if (me?.role !== "admin") redirect("/dashboard");
+  if (me?.role !== "admin" && me?.role !== "manager") redirect("/dashboard");
+  const isAdmin = me?.role === "admin";
 
   const period = currentDarMonth();
 
@@ -71,12 +73,14 @@ export default async function AdminPlayersPage() {
     <div>
       <PageHeader eyebrow="Admin" title="Players" />
       <div className="mx-auto mt-8 max-w-6xl px-6 pb-16">
-        <AdminTabs active="/admin/players" />
+        <AdminTabs active="/admin/players" role={isAdmin ? "admin" : "manager"} />
 
-        <div className="mt-6 flex justify-end gap-3">
-          <PendingApprovalsButton initialPending={pending ?? []} />
-          <AddMemberButton />
-        </div>
+        {isAdmin && (
+          <div className="mt-6 flex justify-end gap-3">
+            <PendingApprovalsButton initialPending={pending ?? []} />
+            <AddMemberButton />
+          </div>
+        )}
 
         <div className="mt-6 grid gap-8 md:grid-cols-[2fr_1fr]">
           <section>
@@ -114,9 +118,9 @@ export default async function AdminPlayersPage() {
                       <tr key={p.id} className={i !== members.length - 1 ? "kitchen-line" : ""}>
                         <td className="px-5 py-2.5 text-sm font-medium text-[var(--color-ink)]">
                           {p.name}
-                          {p.role === "admin" && (
+                          {(p.role === "admin" || p.role === "manager") && (
                             <span className="ml-2 rounded-[var(--radius-pill)] bg-[var(--color-court)]/10 px-2 py-0.5 text-[10px] font-semibold text-[var(--color-court)]">
-                              Admin
+                              {p.role === "admin" ? "Admin" : "Manager"}
                             </span>
                           )}
                         </td>
@@ -124,17 +128,25 @@ export default async function AdminPlayersPage() {
                           {p.dupr_id ?? "—"}
                         </td>
                         <td className="px-5 py-2.5">
-                          <SetDuesButton
-                            playerId={p.id}
-                            playerName={p.name}
-                            currentAmount={p.monthly_dues_amount}
-                          />
+                          {isAdmin ? (
+                            <SetDuesButton
+                              playerId={p.id}
+                              playerName={p.name}
+                              currentAmount={p.monthly_dues_amount}
+                            />
+                          ) : (
+                            "—"
+                          )}
                         </td>
                         <td className="px-5 py-2.5">
-                          <DuesPaidCheckbox
-                            playerId={p.id}
-                            initialChecked={paidThisMonthByPlayerId.get(p.id) ?? false}
-                          />
+                          {isAdmin ? (
+                            <DuesPaidCheckbox
+                              playerId={p.id}
+                              initialChecked={paidThisMonthByPlayerId.get(p.id) ?? false}
+                            />
+                          ) : (
+                            "—"
+                          )}
                         </td>
                         <td className="px-5 py-2.5 text-right">
                           <div className="flex items-center justify-end gap-4">
@@ -145,8 +157,17 @@ export default async function AdminPlayersPage() {
                               phone={p.phone}
                               duprId={p.dupr_id}
                             />
-                            <ResetPasswordButton playerId={p.id} playerName={p.name} />
-                            <RemoveMemberButton playerId={p.id} playerName={p.name} />
+                            {isAdmin && (
+                              <>
+                                <RoleSelectButton
+                                  playerId={p.id}
+                                  playerName={p.name}
+                                  currentRole={p.role}
+                                />
+                                <ResetPasswordButton playerId={p.id} playerName={p.name} />
+                                <RemoveMemberButton playerId={p.id} playerName={p.name} />
+                              </>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -191,7 +212,9 @@ export default async function AdminPlayersPage() {
                         <td className="px-5 py-2.5 text-right">
                           <div className="flex items-center justify-end gap-4">
                             <EditGuestButton playerId={p.id} name={p.name} duprId={p.dupr_id} />
-                            <RemoveGuestButton playerId={p.id} playerName={p.name} />
+                            {isAdmin && (
+                              <RemoveGuestButton playerId={p.id} playerName={p.name} />
+                            )}
                           </div>
                         </td>
                       </tr>

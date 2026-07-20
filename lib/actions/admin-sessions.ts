@@ -4,24 +4,9 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { darDateTimeToISO } from "@/lib/format";
+import { requireAdminId, requireStaffId } from "@/lib/auth/roles";
 
 export type SessionFormState = { error?: string };
-
-async function requireAdminId(supabase: Awaited<ReturnType<typeof createClient>>) {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("Not authenticated");
-
-  const { data: player } = await supabase
-    .from("players")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-
-  if (player?.role !== "admin") throw new Error("Admins only");
-  return user.id;
-}
 
 function readSessionFields(formData: FormData) {
   const title = String(formData.get("title") ?? "").trim();
@@ -72,7 +57,7 @@ export async function createSession(
   const supabase = await createClient();
   let adminId: string;
   try {
-    adminId = await requireAdminId(supabase);
+    adminId = await requireStaffId(supabase);
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Not authorized" };
   }

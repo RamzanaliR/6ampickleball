@@ -21,7 +21,7 @@ export default async function AdminFeedPage() {
     .eq("id", user.id)
     .single();
 
-  if (me?.role !== "admin") redirect("/dashboard");
+  if (me?.role !== "admin" && me?.role !== "manager") redirect("/dashboard");
 
   const { data: pending } = await supabase
     .from("community_feed")
@@ -39,7 +39,7 @@ export default async function AdminFeedPage() {
     <div>
       <PageHeader eyebrow="Admin" title="The Club — review queue" />
       <div className="mx-auto mt-8 max-w-6xl px-6 pb-16">
-        <AdminTabs active="/admin/feed" />
+        <AdminTabs active="/admin/feed" role={me?.role === "manager" ? "manager" : "admin"} />
 
         <div className="mt-6">
           {!pending || pending.length === 0 ? (

@@ -25,6 +25,27 @@ async function requireAdmin(supabase: Awaited<ReturnType<typeof createClient>>):
   return { ok: true, userId: user.id };
 }
 
+/** Same as requireAdmin, but also allows managers — used only for the
+ *  couple of actions Managers are trusted with (editing player details). */
+async function requireStaff(supabase: Awaited<ReturnType<typeof createClient>>): Promise<AdminCheck> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "Not authenticated" };
+
+  const { data: player } = await supabase
+    .from("players")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  if (player?.role !== "admin" && player?.role !== "manager") {
+    return { ok: false, error: "Admins and managers only" };
+  }
+
+  return { ok: true, userId: user.id };
+}
+
 export type AddMemberFormState = {
   error?: string;
   created?: { name: string; email: string; password: string };
@@ -229,17 +250,62 @@ export async function setAdminRole(playerId: string, makeAdmin: boolean): Promis
   return {};
 }
 
+/**
+ * Sets a player's role to player, manager, or admin. Blocks demoting
+ * the last remaining admin so the club can't accidentally end up with
+ * no one who can access the full admin tools (finances, dues, removing
+ * people, etc).
+ */
+export async function setPlayerRole(
+  playerId: string,
+  role: "player" | "manager" | "admin"
+): Promise<SimpleActionResult> {
+  const supabase = await createClient();
+  const admin = await requireAdmin(supabase);
+  if (!admin.ok) return { error: admin.error };
+
+  if (role !== "admin") {
+    const { data: current } = await supabase
+      .from("players")
+      .select("role")
+      .eq("id", playerId)
+      .single();
+
+    if (current?.role === "admin") {
+      const { count } = await supabase
+        .from("players")
+        .select("id", { count: "exact", head: true })
+        .eq("role", "admin");
+      if ((count ?? 0) <= 1) {
+        return { error: "Can't remove the last remaining admin." };
+      }
+    }
+  }
+
+  const { error } = await supabase.from("players").update({ role }).eq("id", playerId);
+  if (error) return { error: error.message };
+
+  revalidatePath("/admin/players");
+  return {};
+}
+
 export type UpdatePlayerDetailsState = { error?: string; success?: boolean };
 
-/** Admin edit of a club member's own profile details. */
+/**
+ * Edit of a club member's profile details — admins and managers.
+ * Writes through the staff_update_member_details RPC (not a direct
+ * table update) so Managers only ever get to touch name/nickname/
+ * phone/dupr_id, never role/status/points, regardless of what a
+ * malformed request might try to send.
+ */
 export async function updateMemberDetails(
   playerId: string,
   _prevState: UpdatePlayerDetailsState,
   formData: FormData
 ): Promise<UpdatePlayerDetailsState> {
   const supabase = await createClient();
-  const admin = await requireAdmin(supabase);
-  if (!admin.ok) return { error: admin.error };
+  const staff = await requireStaff(supabase);
+  if (!staff.ok) return { error: staff.error };
 
   const name = String(formData.get("name") ?? "").trim();
   const nickname = String(formData.get("nickname") ?? "").trim();
@@ -248,15 +314,13 @@ export async function updateMemberDetails(
 
   if (!name) return { error: "Name is required." };
 
-  const { error } = await supabase
-    .from("players")
-    .update({
-      name,
-      nickname: nickname || null,
-      phone: phone || null,
-      dupr_id: duprId || null,
-    })
-    .eq("id", playerId);
+  const { error } = await supabase.rpc("staff_update_member_details", {
+    p_player_id: playerId,
+    p_name: name,
+    p_nickname: nickname || null,
+    p_phone: phone || null,
+    p_dupr_id: duprId || null,
+  });
   if (error) return { error: error.message };
 
   revalidatePath("/admin/players");
@@ -265,26 +329,30 @@ export async function updateMemberDetails(
   return { success: true };
 }
 
-/** Admin edit of a guest's details (name + DUPR only — guests have no account). */
+/**
+ * Edit of a guest's details (name + DUPR only — guests have no
+ * account) — admins and managers, via the same column-scoped RPC
+ * pattern as updateMemberDetails above.
+ */
 export async function updateGuestDetails(
   playerId: string,
   _prevState: UpdatePlayerDetailsState,
   formData: FormData
 ): Promise<UpdatePlayerDetailsState> {
   const supabase = await createClient();
-  const admin = await requireAdmin(supabase);
-  if (!admin.ok) return { error: admin.error };
+  const staff = await requireStaff(supabase);
+  if (!staff.ok) return { error: staff.error };
 
   const name = String(formData.get("name") ?? "").trim();
   const duprId = String(formData.get("dupr_id") ?? "").trim();
 
   if (!name) return { error: "Name is required." };
 
-  const { error } = await supabase
-    .from("players")
-    .update({ name, dupr_id: duprId || null })
-    .eq("id", playerId)
-    .eq("is_guest", true);
+  const { error } = await supabase.rpc("staff_update_guest_details", {
+    p_player_id: playerId,
+    p_name: name,
+    p_dupr_id: duprId || null,
+  });
   if (error) return { error: error.message };
 
   revalidatePath("/admin/players");

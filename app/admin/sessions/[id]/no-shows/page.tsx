@@ -25,7 +25,7 @@ export default async function SessionNoShowsPage({
     .eq("id", user.id)
     .single();
 
-  if (me?.role !== "admin") redirect("/dashboard");
+  if (me?.role !== "admin" && me?.role !== "manager") redirect("/dashboard");
 
   const { data: session } = await supabase
     .from("sessions")
@@ -59,7 +59,7 @@ export default async function SessionNoShowsPage({
         subtitle={`${formatSessionDate(session.date_time)} · ${formatSessionTime(session.date_time)} · ${session.location} — everyone confirmed is assumed to have shown up; flag anyone who didn't.`}
       />
       <div className="mx-auto mt-8 max-w-6xl px-6 pb-16">
-        <AdminTabs active="/admin/sessions" />
+        <AdminTabs active="/admin/sessions" role={me?.role === "manager" ? "manager" : "admin"} />
         <div className="mt-6">
           {sorted.length === 0 ? (
             <EmptyState message="No one confirmed for this session." />

@@ -21,7 +21,9 @@ export async function setNoShow(
     .select("role")
     .eq("id", user.id)
     .single();
-  if (me?.role !== "admin") return { error: "Admins only" };
+  if (me?.role !== "admin" && me?.role !== "manager") {
+    return { error: "Admins and managers only" };
+  }
 
   const { error } = await supabase
     .from("rsvps")
