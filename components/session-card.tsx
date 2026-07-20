@@ -14,7 +14,7 @@ function confirmedColumnCount(count: number) {
 }
 
 const secondaryButtonClass =
-  "rounded-[var(--radius-pill)] border border-[var(--color-line)] px-3 py-1 text-xs font-medium text-[var(--color-ink)] transition-colors hover:border-[var(--color-court)] hover:text-[var(--color-court)] whitespace-nowrap";
+  "block w-full rounded-[var(--radius-pill)] border border-[var(--color-line)] px-4 py-2 text-center text-sm font-medium text-[var(--color-ink)] transition-colors hover:border-[var(--color-court)] hover:text-[var(--color-court)]";
 
 export function SessionCard({
   session,
@@ -44,32 +44,9 @@ export function SessionCard({
   const names = confirmedNames ?? [];
   const columns = confirmedColumnCount(names.length);
 
-  const secondaryActions = isStaff ? (
-    <>
-      <AddGuestModal
-        sessionId={session.id}
-        knownGuestNames={knownGuestNames}
-        triggerLabel="Add Guests"
-        triggerClassName={secondaryButtonClass}
-      />
-      {variant === "upcoming" ? (
-        <Link href={`/admin/sessions/${session.id}/fixtures`} className={secondaryButtonClass}>
-          Generate Fixtures
-        </Link>
-      ) : (
-        <ViewGuestsModal sessionId={session.id} triggerClassName={secondaryButtonClass} />
-      )}
-      <NoShowModal sessionId={session.id} triggerLabel="No-show" triggerClassName={secondaryButtonClass} />
-    </>
-  ) : variant === "current" ? (
-    <Link href={`/sessions/${session.id}`} className={secondaryButtonClass}>
-      View Fixtures
-    </Link>
-  ) : null;
-
   return (
     <div className="rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-paper-raised)] p-6">
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-[1fr_150px]">
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-[1fr_190px]">
         {/* Left: session info */}
         <div>
           <Link href={`/sessions/${session.id}`} className="block">
@@ -94,16 +71,11 @@ export function SessionCard({
             )}
           </Link>
 
-          <div className="mt-4">
-            <div className="flex flex-wrap items-center justify-between gap-2">
+          {names.length > 0 && (
+            <div className="mt-4">
               <p className="text-xs font-medium text-[var(--color-ink)]">
                 Confirmed: ({names.length})
               </p>
-              {secondaryActions && (
-                <div className="flex flex-wrap items-center gap-2">{secondaryActions}</div>
-              )}
-            </div>
-            {names.length > 0 && (
               <div className="mt-1.5 gap-x-6 text-xs text-[var(--color-ink-muted)]" style={{ columns }}>
                 {names.map((name) => (
                   <p key={name} className="break-inside-avoid py-0.5">
@@ -111,13 +83,13 @@ export function SessionCard({
                   </p>
                 ))}
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
 
-        {/* Right: RSVP + share */}
+        {/* Right: action stack */}
         <div className="flex flex-col gap-2">
-          <div>
+          <div className="mb-2">
             <RsvpButton sessionId={session.id} initialStatus={myStatus} full={full} />
             {variant === "upcoming" && (
               <p className="mt-1.5 text-center font-[family-name:var(--font-mono)] text-xs text-[var(--color-ink-muted)]">
@@ -125,14 +97,58 @@ export function SessionCard({
               </p>
             )}
           </div>
-          <div className="flex justify-center">
-            <WhatsAppShareButton
-              title={session.title}
-              dateTime={session.date_time}
-              location={session.location}
-              iconOnly
+
+          {/* Add guest / View fixtures slot */}
+          {isStaff ? (
+            <AddGuestModal
+              sessionId={session.id}
+              knownGuestNames={knownGuestNames}
+              triggerLabel="Add Guests"
+              triggerClassName={secondaryButtonClass}
             />
-          </div>
+          ) : (
+            variant === "current" && (
+              <Link href={`/sessions/${session.id}`} className={secondaryButtonClass}>
+                View Fixtures
+              </Link>
+            )
+          )}
+
+          {/* Generate fixtures / View guests slot (staff only) */}
+          {isStaff &&
+            (variant === "upcoming" ? (
+              <Link href={`/admin/sessions/${session.id}/fixtures`} className={secondaryButtonClass}>
+                Generate Fixtures
+              </Link>
+            ) : (
+              <ViewGuestsModal sessionId={session.id} triggerClassName={secondaryButtonClass} />
+            ))}
+
+          {isStaff && (
+            <div className="mt-1 flex items-center gap-2">
+              <NoShowModal
+                sessionId={session.id}
+                triggerLabel="No-show"
+                triggerClassName={`${secondaryButtonClass} flex-1`}
+              />
+              <WhatsAppShareButton
+                title={session.title}
+                dateTime={session.date_time}
+                location={session.location}
+                iconOnly
+              />
+            </div>
+          )}
+          {!isStaff && (
+            <div className="mt-1 flex justify-end">
+              <WhatsAppShareButton
+                title={session.title}
+                dateTime={session.date_time}
+                location={session.location}
+                iconOnly
+              />
+            </div>
+          )}
         </div>
       </div>
     </div>
