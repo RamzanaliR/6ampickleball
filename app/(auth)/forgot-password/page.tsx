@@ -1,26 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useState } from "react";
+import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { AuthCard, FormField } from "@/components/auth-card";
 
-export default function LoginPage() {
-  return (
-    <Suspense fallback={null}>
-      <LoginForm />
-    </Suspense>
-  );
-}
-
-function LoginForm() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
+export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [sent, setSent] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -28,7 +17,9 @@ function LoginForm() {
     setLoading(true);
 
     const supabase = createClient();
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/auth/callback?next=/reset-password`,
+    });
 
     setLoading(false);
 
@@ -37,12 +28,31 @@ function LoginForm() {
       return;
     }
 
-    router.push(searchParams.get("next") ?? "/dashboard");
-    router.refresh();
+    setSent(true);
+  }
+
+  if (sent) {
+    return (
+      <AuthCard title="Check your email" subtitle="">
+        <p className="text-[var(--color-ink)]">
+          If <span className="font-medium">{email}</span> has an account, a reset link is on its
+          way. Open it on this device to set a new password.
+        </p>
+        <p className="mt-4 text-sm text-[var(--color-ink-muted)]">
+          Didn&apos;t get it after a few minutes? Ask an admin — they can reset your password
+          directly without needing email.
+        </p>
+        <p className="mt-6 text-center text-sm">
+          <Link href="/login" className="font-medium text-[var(--color-court)]">
+            Back to sign in
+          </Link>
+        </p>
+      </AuthCard>
+    );
   }
 
   return (
-    <AuthCard title="Sign in" subtitle="Welcome back — let's see what's on this week.">
+    <AuthCard title="Forgot password" subtitle="We'll email you a link to set a new one.">
       <form onSubmit={handleSubmit} className="space-y-4">
         <FormField
           label="Email"
@@ -52,21 +62,6 @@ function LoginForm() {
           onChange={(e) => setEmail(e.target.value)}
           autoComplete="email"
         />
-        <div>
-          <FormField
-            label="Password"
-            type="password"
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            autoComplete="current-password"
-          />
-          <p className="mt-1.5 text-right text-sm">
-            <Link href="/forgot-password" className="text-[var(--color-court)]">
-              Forgot password?
-            </Link>
-          </p>
-        </div>
         {error && (
           <p className="rounded-[var(--radius-input)] bg-[var(--color-danger-bg)] px-3 py-2 text-sm text-[var(--color-danger)]">
             {error}
@@ -77,13 +72,12 @@ function LoginForm() {
           disabled={loading}
           className="w-full rounded-[var(--radius-pill)] bg-[var(--color-court)] px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[var(--color-court-dark)] disabled:opacity-60"
         >
-          {loading ? "Signing in…" : "Sign in"}
+          {loading ? "Sending…" : "Send reset link"}
         </button>
       </form>
       <p className="mt-6 text-center text-sm text-[var(--color-ink-muted)]">
-        New here?{" "}
-        <Link href="/signup" className="font-medium text-[var(--color-court)]">
-          Request to join
+        <Link href="/login" className="font-medium text-[var(--color-court)]">
+          Back to sign in
         </Link>
       </p>
     </AuthCard>

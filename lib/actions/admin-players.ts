@@ -290,3 +290,36 @@ export async function updateGuestDetails(
   revalidatePath("/admin/players");
   return { success: true };
 }
+
+export type ResetPasswordResult = {
+  error?: string;
+  reset?: { name: string; email: string; password: string };
+};
+
+/**
+ * Sets a brand-new password for a member directly — no email involved,
+ * so it works even if they never got (or can't get, due to Supabase's
+ * rate-limited default email service) a self-serve reset link. Share
+ * the returned password with them the same way as a new account.
+ */
+export async function resetMemberPassword(playerId: string): Promise<ResetPasswordResult> {
+  const supabase = await createClient();
+  const admin_ = await requireAdmin(supabase);
+  if (!admin_.ok) return { error: admin_.error };
+
+  const { data: player, error: playerError } = await supabase
+    .from("players")
+    .select("name, email")
+    .eq("id", playerId)
+    .single();
+  if (playerError) return { error: playerError.message };
+  if (!player?.email) return { error: "This player has no email on file." };
+
+  const password = generateTempPassword();
+  const admin = createAdminClient();
+
+  const { error } = await admin.auth.admin.updateUserById(playerId, { password });
+  if (error) return { error: error.message };
+
+  return { reset: { name: player.name, email: player.email, password } };
+}

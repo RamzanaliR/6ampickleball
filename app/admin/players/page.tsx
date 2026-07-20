@@ -11,6 +11,7 @@ import { SetDuesButton } from "@/components/admin/set-dues-button";
 import { DuesPaidCheckbox } from "@/components/admin/dues-paid-checkbox";
 import { EditMemberButton } from "@/components/admin/edit-member-button";
 import { EditGuestButton } from "@/components/admin/edit-guest-button";
+import { ResetPasswordButton } from "@/components/admin/reset-password-button";
 import { currentDarMonth } from "@/lib/format";
 
 export default async function AdminPlayersPage() {
@@ -144,6 +145,7 @@ export default async function AdminPlayersPage() {
                               phone={p.phone}
                               duprId={p.dupr_id}
                             />
+                            <ResetPasswordButton playerId={p.id} playerName={p.name} />
                             <RemoveMemberButton playerId={p.id} playerName={p.name} />
                           </div>
                         </td>
