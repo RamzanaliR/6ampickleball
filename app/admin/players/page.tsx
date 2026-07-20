@@ -70,7 +70,7 @@ export default async function AdminPlayersPage() {
 
   return (
     <div>
-      <PageHeader eyebrow="Admin" title="Players" />
+      <PageHeader eyebrow="Admin" title="Players Tables" />
       <div className="mx-auto mt-8 max-w-6xl px-6 pb-16">
         <AdminTabs active="/admin/players" role={isAdmin ? "admin" : "manager"} />
 
@@ -106,8 +106,8 @@ export default async function AdminPlayersPage() {
                   <thead>
                     <tr className="kitchen-line font-[family-name:var(--font-mono)] text-xs uppercase tracking-widest text-[var(--color-ink-muted)]">
                       <th className="px-5 py-2.5">Name</th>
-                      <th className="px-5 py-2.5">DUPR ID</th>
-                      <th className="px-5 py-2.5">Monthly dues</th>
+                      <th className="whitespace-nowrap px-5 py-2.5">DUPR ID</th>
+                      <th className="w-36 whitespace-nowrap px-5 py-2.5">Dues</th>
                       <th className="px-5 py-2.5">Paid</th>
                       <th className="px-5 py-2.5">Role</th>
                       <th className="px-5 py-2.5" />
@@ -119,10 +119,10 @@ export default async function AdminPlayersPage() {
                         <td className="px-5 py-2.5 text-sm font-medium text-[var(--color-ink)]">
                           {p.name}
                         </td>
-                        <td className="px-5 py-2.5 font-[family-name:var(--font-mono)] text-sm text-[var(--color-ink-muted)]">
+                        <td className="whitespace-nowrap px-5 py-2.5 font-[family-name:var(--font-mono)] text-sm text-[var(--color-ink-muted)]">
                           {p.dupr_id ?? "—"}
                         </td>
-                        <td className="px-5 py-2.5">
+                        <td className="w-36 px-5 py-2.5">
                           {isAdmin ? (
                             <SetDuesButton
                               playerId={p.id}

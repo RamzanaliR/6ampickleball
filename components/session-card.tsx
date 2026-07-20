@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { formatSessionDate, formatSessionTime } from "@/lib/format";
 import { RsvpButton } from "@/components/rsvp-button";
 import { WhatsAppShareButton } from "@/components/whatsapp-share-button";
@@ -9,6 +10,7 @@ export function SessionCard({
   spotsLeft,
   myStatus,
   confirmedNames,
+  isStaff = false,
 }: {
   session: {
     id: string;
@@ -21,6 +23,7 @@ export function SessionCard({
   spotsLeft: number;
   myStatus: RsvpState;
   confirmedNames?: string[];
+  isStaff?: boolean;
 }) {
   const full = spotsLeft <= 0;
 
@@ -77,6 +80,29 @@ export function SessionCard({
           location={session.location}
         />
       </div>
+
+      {isStaff && (
+        <div className="kitchen-line mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 pt-3">
+          <Link
+            href={`/sessions/${session.id}#add-guest`}
+            className="text-xs font-medium text-[var(--color-ink-muted)] hover:text-[var(--color-court)]"
+          >
+            Add guest
+          </Link>
+          <Link
+            href={`/admin/sessions/${session.id}/fixtures`}
+            className="text-xs font-medium text-[var(--color-ink-muted)] hover:text-[var(--color-court)]"
+          >
+            Fixtures
+          </Link>
+          <Link
+            href={`/admin/sessions/${session.id}/no-shows`}
+            className="text-xs font-medium text-[var(--color-ink-muted)] hover:text-[var(--color-court)]"
+          >
+            No-shows
+          </Link>
+        </div>
+      )}
     </div>
   );
 }

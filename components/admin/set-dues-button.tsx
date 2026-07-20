@@ -41,7 +41,7 @@ export function SetDuesButton({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="font-[family-name:var(--font-mono)] text-sm text-[var(--color-ink-muted)] underline decoration-dotted underline-offset-4 transition-colors hover:text-[var(--color-court)]"
+        className="whitespace-nowrap font-[family-name:var(--font-mono)] text-sm text-[var(--color-ink-muted)] underline decoration-dotted underline-offset-4 transition-colors hover:text-[var(--color-court)]"
       >
         {currentAmount ? formatTZS(currentAmount) : "Set dues"}
       </button>

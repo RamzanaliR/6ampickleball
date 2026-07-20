@@ -98,6 +98,8 @@ export default async function SessionsPage() {
     names.sort((a, b) => a.localeCompare(b));
   }
 
+  const isStaff = player?.role === "admin" || player?.role === "manager";
+
   return (
     <div>
       <PageHeader
@@ -105,7 +107,7 @@ export default async function SessionsPage() {
         title="Sessions"
         subtitle="Say I'm in before spots fill — the waitlist kicks in automatically."
         action={
-          player?.role === "admin" ? (
+          isStaff ? (
             <Link
               href="/admin/sessions/new"
               className="rounded-[var(--radius-pill)] bg-[var(--color-court)] px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[var(--color-court-dark)]"
@@ -127,40 +129,63 @@ export default async function SessionsPage() {
               ) : (
                 <div className="space-y-4">
                   {current.map((s) => (
-                    <Link
+                    <div
                       key={s.id}
-                      href={`/sessions/${s.id}`}
-                      className="block rounded-[var(--radius-card)] border border-[var(--color-court)] bg-[var(--color-paper-raised)] p-6 transition-colors hover:border-[var(--color-court-dark)]"
+                      className="rounded-[var(--radius-card)] border border-[var(--color-court)] bg-[var(--color-paper-raised)] p-6"
                     >
-                      <div className="flex items-start justify-between gap-4">
-                        <div>
-                          <p className="font-[family-name:var(--font-mono)] text-xs uppercase tracking-widest text-[var(--color-court)]">
-                            {formatSessionDate(s.date_time)} · {formatSessionTime(s.date_time)}
-                          </p>
-                          <h3 className="mt-1 font-[family-name:var(--font-display)] text-2xl font-bold uppercase tracking-tight text-[var(--color-ink)]">
-                            {s.title}
-                          </h3>
-                          <p className="mt-1 text-sm text-[var(--color-ink-muted)]">{s.location}</p>
+                      <Link href={`/sessions/${s.id}`} className="block transition-colors">
+                        <div className="flex items-start justify-between gap-4">
+                          <div>
+                            <p className="font-[family-name:var(--font-mono)] text-xs uppercase tracking-widest text-[var(--color-court)]">
+                              {formatSessionDate(s.date_time)} · {formatSessionTime(s.date_time)}
+                            </p>
+                            <h3 className="mt-1 font-[family-name:var(--font-display)] text-2xl font-bold uppercase tracking-tight text-[var(--color-ink)]">
+                              {s.title}
+                            </h3>
+                            <p className="mt-1 text-sm text-[var(--color-ink-muted)]">{s.location}</p>
+                          </div>
+                          <span className="shrink-0 rounded-[var(--radius-pill)] bg-[var(--color-court)] px-3 py-1 text-xs font-semibold text-white">
+                            Fixtures live
+                          </span>
                         </div>
-                        <span className="shrink-0 rounded-[var(--radius-pill)] bg-[var(--color-court)] px-3 py-1 text-xs font-semibold text-white">
-                          Fixtures live
-                        </span>
-                      </div>
-                      {!s.counts_toward_leaderboard && (
-                        <p className="mt-2 text-xs text-[var(--color-ink-muted)]">
-                          Doesn&apos;t count toward the season leaderboard
+                        {!s.counts_toward_leaderboard && (
+                          <p className="mt-2 text-xs text-[var(--color-ink-muted)]">
+                            Doesn&apos;t count toward the season leaderboard
+                          </p>
+                        )}
+                        {(confirmedNamesBySession.get(s.id) ?? []).length > 0 && (
+                          <p className="mt-2 text-xs text-[var(--color-ink-muted)]">
+                            <span className="font-medium text-[var(--color-ink)]">Confirmed:</span>{" "}
+                            {(confirmedNamesBySession.get(s.id) ?? []).join(", ")}
+                          </p>
+                        )}
+                        <p className="mt-4 text-sm font-medium text-[var(--color-court)]">
+                          View fixtures &amp; standings →
                         </p>
+                      </Link>
+                      {isStaff && (
+                        <div className="kitchen-line mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 pt-3">
+                          <Link
+                            href={`/sessions/${s.id}#add-guest`}
+                            className="text-xs font-medium text-[var(--color-ink-muted)] hover:text-[var(--color-court)]"
+                          >
+                            Add guest
+                          </Link>
+                          <Link
+                            href={`/admin/sessions/${s.id}/fixtures`}
+                            className="text-xs font-medium text-[var(--color-ink-muted)] hover:text-[var(--color-court)]"
+                          >
+                            Fixtures
+                          </Link>
+                          <Link
+                            href={`/admin/sessions/${s.id}/no-shows`}
+                            className="text-xs font-medium text-[var(--color-ink-muted)] hover:text-[var(--color-court)]"
+                          >
+                            No-shows
+                          </Link>
+                        </div>
                       )}
-                      {(confirmedNamesBySession.get(s.id) ?? []).length > 0 && (
-                        <p className="mt-2 text-xs text-[var(--color-ink-muted)]">
-                          <span className="font-medium text-[var(--color-ink)]">Confirmed:</span>{" "}
-                          {(confirmedNamesBySession.get(s.id) ?? []).join(", ")}
-                        </p>
-                      )}
-                      <p className="mt-4 text-sm font-medium text-[var(--color-court)]">
-                        View fixtures &amp; standings →
-                      </p>
-                    </Link>
+                    </div>
                   ))}
                 </div>
               )}
@@ -187,6 +212,7 @@ export default async function SessionsPage() {
                         spotsLeft={spotsLeft}
                         myStatus={myStatus}
                         confirmedNames={confirmedNamesBySession.get(s.id) ?? []}
+                        isStaff={isStaff}
                       />
                     );
                   })}

@@ -62,7 +62,7 @@ export function RoleSelectButton({
         onClick={handleOpen}
         className="text-xs font-medium text-[var(--color-ink-muted)] transition-colors hover:text-[var(--color-court)]"
       >
-        Role: {roleLabels[currentRole]}
+        {roleLabels[currentRole]}
       </button>
       <Modal open={open} onClose={() => setOpen(false)} title={`Set role for ${playerName}`}>
         <div className="space-y-4">

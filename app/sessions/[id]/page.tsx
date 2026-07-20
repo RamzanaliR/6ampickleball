@@ -208,7 +208,7 @@ export default async function SessionDetailPage({
           </div>
         )}
 
-        <div className="mb-8 rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-paper-raised)] p-5">
+        <div id="add-guest" className="mb-8 rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-paper-raised)] p-5 scroll-mt-24">
           <p className="text-xs uppercase tracking-widest text-[var(--color-ink-muted)]">
             Confirmed ({confirmedNames.length})
           </p>

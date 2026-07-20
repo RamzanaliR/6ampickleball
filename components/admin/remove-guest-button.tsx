@@ -36,9 +36,13 @@ export function RemoveGuestButton({ playerId, playerName }: { playerId: string; 
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="text-xs font-medium text-[var(--color-ink-muted)] transition-colors hover:text-[var(--color-danger)]"
+        aria-label={`Remove ${playerName}`}
+        title="Remove"
+        className="text-[var(--color-danger)] transition-opacity hover:opacity-70"
       >
-        Remove
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 4L4 12M4 4l8 8" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
+        </svg>
       </button>
       <Modal open={open} onClose={handleClose} title="Remove guest">
         {done ? (
