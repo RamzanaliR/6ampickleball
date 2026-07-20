@@ -152,3 +152,47 @@ export async function deleteSession(sessionId: string) {
   revalidatePath("/dashboard");
   revalidatePath("/leaderboard");
 }
+
+export type BulkActionResult = { error?: string; count?: number };
+
+export async function bulkSetSessionStatus(
+  sessionIds: string[],
+  status: "upcoming" | "completed" | "cancelled"
+): Promise<BulkActionResult> {
+  const supabase = await createClient();
+  try {
+    await requireAdminId(supabase);
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Not authorized" };
+  }
+  if (sessionIds.length === 0) return { error: "Nothing selected." };
+
+  const { error } = await supabase.from("sessions").update({ status }).in("id", sessionIds);
+  if (error) return { error: error.message };
+
+  revalidatePath("/admin/sessions");
+  revalidatePath("/sessions");
+  revalidatePath("/dashboard");
+  return { count: sessionIds.length };
+}
+
+export async function bulkDeleteSessions(sessionIds: string[]): Promise<BulkActionResult> {
+  const supabase = await createClient();
+  try {
+    await requireAdminId(supabase);
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Not authorized" };
+  }
+  if (sessionIds.length === 0) return { error: "Nothing selected." };
+
+  for (const id of sessionIds) {
+    const { error } = await supabase.rpc("delete_session", { p_session_id: id });
+    if (error) return { error: error.message };
+  }
+
+  revalidatePath("/admin/sessions");
+  revalidatePath("/sessions");
+  revalidatePath("/dashboard");
+  revalidatePath("/leaderboard");
+  return { count: sessionIds.length };
+}
