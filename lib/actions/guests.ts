@@ -77,6 +77,75 @@ export async function getSessionGuestRoster(sessionId: string): Promise<GetSessi
   return { guests };
 }
 
+export type AddParticipantNamesState = { error?: string; addedCount?: number };
+
+/**
+ * Adds one or more members and/or guests to a session from a plain
+ * comma-separated list of names (used by the "Add players" box on the
+ * admin Fixtures page). Each name is matched case-insensitively
+ * against every approved player (members and guests): a member match
+ * confirms their RSVP, a guest match reuses that guest, and anything
+ * unmatched is created as a new guest.
+ */
+export async function addParticipantNamesToSession(
+  sessionId: string,
+  names: string[]
+): Promise<AddParticipantNamesState> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  const { data: me } = await supabase
+    .from("players")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+  if (me?.role !== "admin" && me?.role !== "manager") {
+    return { error: "Admins and managers only" };
+  }
+
+  const cleaned = [...new Set(names.map((n) => n.trim()).filter(Boolean))];
+  if (cleaned.length === 0) return { error: "Enter at least one name." };
+
+  const { data: allPlayers } = await supabase
+    .from("players")
+    .select("id, name, is_guest")
+    .eq("status", "approved");
+
+  const byLowerName = new Map(
+    (allPlayers ?? []).map((p) => [p.name.trim().toLowerCase(), p])
+  );
+
+  for (const name of cleaned) {
+    const match = byLowerName.get(name.toLowerCase());
+
+    if (match && !match.is_guest) {
+      const { error } = await supabase
+        .from("rsvps")
+        .upsert(
+          { player_id: match.id, session_id: sessionId, status: "confirmed" },
+          { onConflict: "player_id,session_id" }
+        );
+      if (error) return { error: `${name}: ${error.message}` };
+    } else {
+      const { error } = await supabase.rpc("add_guest_to_session", {
+        p_session_id: sessionId,
+        p_name: match ? null : name,
+        p_existing_guest_id: match ? match.id : null,
+      });
+      if (error) return { error: `${name}: ${error.message}` };
+    }
+  }
+
+  revalidatePath(`/admin/sessions/${sessionId}/fixtures`);
+  revalidatePath(`/admin/sessions/${sessionId}/no-shows`);
+  revalidatePath(`/sessions/${sessionId}`);
+  revalidatePath("/sessions");
+  return { addedCount: cleaned.length };
+}
+
 export type AddGuestNamesState = { error?: string; addedCount?: number };
 
 /**

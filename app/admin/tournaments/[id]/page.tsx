@@ -8,7 +8,8 @@ import { AddTournamentEntryForm } from "@/components/admin/add-tournament-entry-
 import { TournamentEntryRow } from "@/components/admin/tournament-entry-row";
 import { SessionStandingsTable } from "@/components/session-standings-table";
 import { computeStandings, sortStandings } from "@/lib/fixtures/standings";
-import { formatSessionDate, formatSessionTime } from "@/lib/format";
+import { ExportDuprCsvButton, type DuprMatchRow } from "@/components/admin/export-dupr-csv-button";
+import { formatSessionDate, formatSessionTime, toDarDateInputValue } from "@/lib/format";
 
 export default async function AdminTournamentPage({
   params,
@@ -62,10 +63,22 @@ export default async function AdminTournamentPage({
   const { data: matches } = sessionIds.length
     ? await supabase
         .from("matches")
-        .select("team_a, team_b, sets, winning_team, verified")
+        .select("session_id, team_a, team_b, sets, winning_team, verified")
         .in("session_id", sessionIds)
         .eq("source", "fixture")
     : { data: [] };
+
+  const matchPlayerIds = [
+    ...new Set((matches ?? []).flatMap((m) => [...m.team_a, ...m.team_b])),
+  ];
+  const { data: matchPlayers } = matchPlayerIds.length
+    ? await supabase.from("players").select("id, name, dupr_id").in("id", matchPlayerIds)
+    : { data: [] as { id: string; name: string; dupr_id: string | null }[] };
+  const duprById = new Map((matchPlayers ?? []).map((p) => [p.id, p.dupr_id]));
+  const matchNameById = new Map((matchPlayers ?? []).map((p) => [p.id, p.name]));
+  const sessionInfoById = new Map(
+    (sessions ?? []).map((s) => [s.id, { date: toDarDateInputValue(s.date_time), location: s.location }])
+  );
 
   const nameById = new Map((allPlayers ?? []).map((p) => [p.id, p.name]));
   const standingsRows = sortStandings(
@@ -94,9 +107,31 @@ export default async function AdminTournamentPage({
         </div>
 
         <section className="mt-8">
-          <h2 className="font-[family-name:var(--font-display)] text-xl font-bold uppercase tracking-tight text-[var(--color-ink)]">
-            Standings
-          </h2>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="font-[family-name:var(--font-display)] text-xl font-bold uppercase tracking-tight text-[var(--color-ink)]">
+              Standings
+            </h2>
+            {(matches ?? []).some((m) => (m.sets as { a: number; b: number }[]).length > 0) && (
+              <ExportDuprCsvButton
+                event={tournament.name}
+                fileNameHint={tournament.name}
+                matches={(matches ?? [])
+                  .filter((m) => m.team_a.length === 2 && m.team_b.length === 2)
+                  .map((m): DuprMatchRow => {
+                    const info = sessionInfoById.get(m.session_id);
+                    return {
+                      date: info?.date ?? "",
+                      location: info?.location ?? "",
+                      teamA: m.team_a,
+                      teamB: m.team_b,
+                      sets: m.sets as { a: number; b: number }[],
+                    };
+                  })}
+                nameById={matchNameById}
+                duprById={duprById}
+              />
+            )}
+          </div>
           <div className="mt-4">
             {standingsRows.length > 0 ? (
               <SessionStandingsTable

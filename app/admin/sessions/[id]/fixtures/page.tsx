@@ -5,12 +5,14 @@ import { PageHeader } from "@/components/page-header";
 import { AdminTabs } from "@/components/admin/admin-tabs";
 import { EmptyState } from "@/components/empty-state";
 import { GenerateFixturesForm } from "@/components/admin/generate-fixtures-form";
-import { AddParticipantForm } from "@/components/admin/add-participant-form";
+import { AddPlayersBox } from "@/components/admin/add-players-box";
 import { RegenerateFixturesPanel } from "@/components/admin/regenerate-fixtures-panel";
 import { FixtureMatchScoreForm } from "@/components/admin/fixture-match-score-form";
 import { FixtureRoundNavigator } from "@/components/fixture-round-navigator";
 import { SessionStandingsTable } from "@/components/session-standings-table";
 import { computeStandings, sortStandings } from "@/lib/fixtures/standings";
+import { ExportDuprCsvButton, type DuprMatchRow } from "@/components/admin/export-dupr-csv-button";
+import { toDarDateInputValue } from "@/lib/format";
 import type { FixtureSettings, MatchSet } from "@/lib/types";
 
 export default async function SessionFixturesPage({
@@ -51,8 +53,8 @@ export default async function SessionFixturesPage({
   const noShowByPlayerId = new Map((rsvps ?? []).map((r) => [r.player_id, r.no_show]));
 
   const { data: confirmedPlayers } = confirmedIds.length
-    ? await supabase.from("players").select("id, name").in("id", confirmedIds).order("name")
-    : { data: [] as { id: string; name: string }[] };
+    ? await supabase.from("players").select("id, name, is_guest").in("id", confirmedIds).order("name")
+    : { data: [] as { id: string; name: string; is_guest: boolean }[] };
 
   const { data: matchesData } = await supabase
     .from("matches")
@@ -67,9 +69,10 @@ export default async function SessionFixturesPage({
     ...new Set([...confirmedIds, ...matches.flatMap((m) => [...m.team_a, ...m.team_b])]),
   ];
   const { data: playersData } = playerIds.length
-    ? await supabase.from("players").select("id, name").in("id", playerIds)
-    : { data: [] as { id: string; name: string }[] };
+    ? await supabase.from("players").select("id, name, dupr_id").in("id", playerIds)
+    : { data: [] as { id: string; name: string; dupr_id: string | null }[] };
   const nameById = new Map((playersData ?? []).map((p) => [p.id, p.name]));
+  const duprById = new Map((playersData ?? []).map((p) => [p.id, p.dupr_id]));
   const teamLabel = (ids: string[]) =>
     ids.map((pid) => nameById.get(pid) ?? "Unknown").join(" & ");
 
@@ -183,10 +186,12 @@ export default async function SessionFixturesPage({
                 Add players
               </h2>
               <div className="mt-4 rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-paper-raised)] p-6">
-                <AddParticipantForm
+                <AddPlayersBox
                   sessionId={id}
-                  addableMembers={addableMembers}
-                  knownGuests={knownGuests ?? []}
+                  knownNames={[
+                    ...addableMembers.map((m) => m.name),
+                    ...(knownGuests ?? []).map((g) => g.name),
+                  ]}
                 />
               </div>
               <div className="mt-4">
@@ -196,9 +201,16 @@ export default async function SessionFixturesPage({
                 {!confirmedPlayers || confirmedPlayers.length === 0 ? (
                   <p className="mt-2 text-sm text-[var(--color-ink-muted)]">Nobody yet.</p>
                 ) : (
-                  <p className="mt-2 text-sm text-[var(--color-ink)]">
-                    {confirmedPlayers.map((p) => p.name).join(", ")}
-                  </p>
+                  <div className="mt-2 grid grid-cols-3 gap-x-4 gap-y-1 text-sm text-[var(--color-ink)]">
+                    {confirmedPlayers.map((p) => (
+                      <p key={p.id}>
+                        {p.name}
+                        {p.is_guest && (
+                          <span className="text-[var(--color-ink-muted)]"> (Guest)</span>
+                        )}
+                      </p>
+                    ))}
+                  </div>
                 )}
               </div>
             </section>
@@ -226,6 +238,25 @@ export default async function SessionFixturesPage({
               >
                 Export fixtures to PDF
               </Link>
+              {matches.some((m) => (m.sets as MatchSet[]).length > 0) && (
+                <ExportDuprCsvButton
+                  event={`6AM Pickleball Club — ${session.title}`}
+                  fileNameHint={session.title}
+                  matches={matches
+                    .filter((m) => m.team_a.length === 2 && m.team_b.length === 2)
+                    .map(
+                      (m): DuprMatchRow => ({
+                        date: toDarDateInputValue(session.date_time),
+                        location: session.location,
+                        teamA: m.team_a,
+                        teamB: m.team_b,
+                        sets: m.sets as MatchSet[],
+                      })
+                    )}
+                  nameById={nameById}
+                  duprById={duprById}
+                />
+              )}
             </div>
 
             {me?.role === "admin" && (

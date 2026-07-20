@@ -52,8 +52,7 @@ export function SessionCard({
           <Link href={`/sessions/${session.id}`} className="block">
             <div className="flex flex-wrap items-center gap-2">
               <p className="font-[family-name:var(--font-mono)] text-xs uppercase tracking-widest text-[var(--color-court)]">
-                {formatSessionDate(session.date_time)} · {formatSessionTime(session.date_time)} ·{" "}
-                {session.location}
+                {formatSessionDate(session.date_time)} · {formatSessionTime(session.date_time)}
               </p>
               {variant === "current" && (
                 <span className="rounded-[var(--radius-pill)] bg-[var(--color-court)] px-3 py-0.5 text-xs font-semibold text-white">
@@ -61,6 +60,9 @@ export function SessionCard({
                 </span>
               )}
             </div>
+            <p className="mt-0.5 font-[family-name:var(--font-mono)] text-xs uppercase tracking-widest text-[var(--color-court)]">
+              {session.location}
+            </p>
             <h3 className="mt-1 font-[family-name:var(--font-display)] text-2xl font-bold uppercase tracking-tight text-[var(--color-ink)] hover:text-[var(--color-court)]">
               {session.title}
             </h3>
@@ -125,7 +127,7 @@ export function SessionCard({
             ))}
 
           {isStaff && (
-            <div className="mt-1 flex items-center gap-2">
+            <div className="flex items-center gap-2">
               <NoShowModal
                 sessionId={session.id}
                 triggerLabel="No-show"
