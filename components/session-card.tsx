@@ -1,7 +1,9 @@
-import Link from "next/link";
 import { formatSessionDate, formatSessionTime } from "@/lib/format";
 import { RsvpButton } from "@/components/rsvp-button";
 import { WhatsAppShareButton } from "@/components/whatsapp-share-button";
+import { AddGuestModal } from "@/components/add-guest-modal";
+import { NoShowModal } from "@/components/no-show-modal";
+import Link from "next/link";
 
 type RsvpState = "confirmed" | "waitlisted" | "none";
 
@@ -11,6 +13,7 @@ export function SessionCard({
   myStatus,
   confirmedNames,
   isStaff = false,
+  knownGuestNames = [],
 }: {
   session: {
     id: string;
@@ -24,6 +27,7 @@ export function SessionCard({
   myStatus: RsvpState;
   confirmedNames?: string[];
   isStaff?: boolean;
+  knownGuestNames?: string[];
 }) {
   const full = spotsLeft <= 0;
 
@@ -83,24 +87,14 @@ export function SessionCard({
 
       {isStaff && (
         <div className="kitchen-line mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 pt-3">
-          <Link
-            href={`/sessions/${session.id}#add-guest`}
-            className="text-xs font-medium text-[var(--color-ink-muted)] hover:text-[var(--color-court)]"
-          >
-            Add guest
-          </Link>
+          <AddGuestModal sessionId={session.id} knownGuestNames={knownGuestNames} />
           <Link
             href={`/admin/sessions/${session.id}/fixtures`}
             className="text-xs font-medium text-[var(--color-ink-muted)] hover:text-[var(--color-court)]"
           >
             Fixtures
           </Link>
-          <Link
-            href={`/admin/sessions/${session.id}/no-shows`}
-            className="text-xs font-medium text-[var(--color-ink-muted)] hover:text-[var(--color-court)]"
-          >
-            No-shows
-          </Link>
+          <NoShowModal sessionId={session.id} />
         </div>
       )}
     </div>

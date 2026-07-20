@@ -4,7 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/page-header";
 import { EmptyState } from "@/components/empty-state";
 import { RsvpButton } from "@/components/rsvp-button";
-import { SessionAddGuestInline } from "@/components/session-add-guest-inline";
+import { AddGuestModal } from "@/components/add-guest-modal";
+import { NoShowModal } from "@/components/no-show-modal";
 import { FixtureRoundNavigator } from "@/components/fixture-round-navigator";
 import { SessionStandingsTable } from "@/components/session-standings-table";
 import { ReadOnlyMatchCard } from "@/components/read-only-match-card";
@@ -181,12 +182,11 @@ export default async function SessionDetailPage({
             >
               Fixtures
             </Link>
-            <Link
-              href={`/admin/sessions/${session.id}/no-shows`}
-              className="text-sm font-medium text-[var(--color-ink)] hover:text-[var(--color-court)]"
-            >
-              No-shows
-            </Link>
+            <NoShowModal
+              sessionId={session.id}
+              triggerLabel="No-shows"
+              triggerClassName="text-sm font-medium text-[var(--color-ink)] hover:text-[var(--color-court)]"
+            />
           </div>
         )}
 
@@ -218,7 +218,12 @@ export default async function SessionDetailPage({
             <p className="mt-2 text-sm text-[var(--color-ink)]">{confirmedNames.join(", ")}</p>
           )}
           {isStaff && (
-            <SessionAddGuestInline sessionId={session.id} knownGuests={knownGuests ?? []} />
+            <AddGuestModal
+              sessionId={session.id}
+              knownGuestNames={(knownGuests ?? []).map((g) => g.name)}
+              triggerLabel="+ Add guest"
+              triggerClassName="mt-3 text-sm font-medium text-[var(--color-court)] hover:text-[var(--color-court-dark)]"
+            />
           )}
         </div>
 

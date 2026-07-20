@@ -4,6 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/page-header";
 import { EmptyState } from "@/components/empty-state";
 import { SessionCard } from "@/components/session-card";
+import { AddGuestModal } from "@/components/add-guest-modal";
+import { NoShowModal } from "@/components/no-show-modal";
 import { formatSessionDate, formatSessionTime, displayName } from "@/lib/format";
 
 type RsvpState = "confirmed" | "waitlisted" | "none";
@@ -100,6 +102,11 @@ export default async function SessionsPage() {
 
   const isStaff = player?.role === "admin" || player?.role === "manager";
 
+  const { data: knownGuestsData } = isStaff
+    ? await supabase.from("players").select("name").eq("is_guest", true).eq("status", "approved").order("name")
+    : { data: [] as { name: string }[] };
+  const knownGuestNames = (knownGuestsData ?? []).map((g) => g.name);
+
   return (
     <div>
       <PageHeader
@@ -165,24 +172,14 @@ export default async function SessionsPage() {
                       </Link>
                       {isStaff && (
                         <div className="kitchen-line mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 pt-3">
-                          <Link
-                            href={`/sessions/${s.id}#add-guest`}
-                            className="text-xs font-medium text-[var(--color-ink-muted)] hover:text-[var(--color-court)]"
-                          >
-                            Add guest
-                          </Link>
+                          <AddGuestModal sessionId={s.id} knownGuestNames={knownGuestNames} />
                           <Link
                             href={`/admin/sessions/${s.id}/fixtures`}
                             className="text-xs font-medium text-[var(--color-ink-muted)] hover:text-[var(--color-court)]"
                           >
                             Fixtures
                           </Link>
-                          <Link
-                            href={`/admin/sessions/${s.id}/no-shows`}
-                            className="text-xs font-medium text-[var(--color-ink-muted)] hover:text-[var(--color-court)]"
-                          >
-                            No-shows
-                          </Link>
+                          <NoShowModal sessionId={s.id} />
                         </div>
                       )}
                     </div>
@@ -213,6 +210,7 @@ export default async function SessionsPage() {
                         myStatus={myStatus}
                         confirmedNames={confirmedNamesBySession.get(s.id) ?? []}
                         isStaff={isStaff}
+                        knownGuestNames={knownGuestNames}
                       />
                     );
                   })}

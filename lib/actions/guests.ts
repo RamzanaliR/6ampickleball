@@ -34,6 +34,64 @@ export async function addGuestToSession(
   return { success: true };
 }
 
+export type AddGuestNamesState = { error?: string; addedCount?: number };
+
+/**
+ * Adds one or more guests to a session from a plain list of names
+ * (as typed into a comma-separated field). Each name is matched
+ * case-insensitively against known guests; a match reuses that
+ * guest, otherwise a new guest is created — same underlying RPC as
+ * addGuestToSession above, just looped over a batch of names.
+ */
+export async function addGuestNamesToSession(
+  sessionId: string,
+  names: string[]
+): Promise<AddGuestNamesState> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  const { data: me } = await supabase
+    .from("players")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+  if (me?.role !== "admin" && me?.role !== "manager") {
+    return { error: "Admins and managers only" };
+  }
+
+  const cleaned = [...new Set(names.map((n) => n.trim()).filter(Boolean))];
+  if (cleaned.length === 0) return { error: "Enter at least one name." };
+
+  const { data: existingGuests } = await supabase
+    .from("players")
+    .select("id, name")
+    .eq("is_guest", true)
+    .eq("status", "approved");
+
+  const existingIdByLowerName = new Map(
+    (existingGuests ?? []).map((g) => [g.name.trim().toLowerCase(), g.id])
+  );
+
+  for (const name of cleaned) {
+    const existingId = existingIdByLowerName.get(name.toLowerCase());
+    const { error } = await supabase.rpc("add_guest_to_session", {
+      p_session_id: sessionId,
+      p_name: existingId ? null : name,
+      p_existing_guest_id: existingId ?? null,
+    });
+    if (error) return { error: `${name}: ${error.message}` };
+  }
+
+  revalidatePath(`/admin/sessions/${sessionId}/no-shows`);
+  revalidatePath(`/admin/sessions/${sessionId}/fixtures`);
+  revalidatePath(`/sessions/${sessionId}`);
+  revalidatePath("/sessions");
+  return { addedCount: cleaned.length };
+}
+
 export type AddMemberToSessionState = { error?: string };
 
 /**

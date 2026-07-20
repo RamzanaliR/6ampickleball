@@ -104,7 +104,7 @@ export default async function AdminPlayersPage() {
               ) : (
                 <table className="w-full text-left">
                   <thead>
-                    <tr className="kitchen-line font-[family-name:var(--font-mono)] text-xs uppercase tracking-widest text-[var(--color-ink-muted)]">
+                    <tr className="bg-[var(--color-court)] font-[family-name:var(--font-mono)] text-xs uppercase tracking-widest text-white">
                       <th className="px-5 py-2.5">Name</th>
                       <th className="whitespace-nowrap px-5 py-2.5">DUPR ID</th>
                       <th className="w-36 whitespace-nowrap px-5 py-2.5">Dues</th>
@@ -197,7 +197,7 @@ export default async function AdminPlayersPage() {
               ) : (
                 <table className="w-full text-left">
                   <thead>
-                    <tr className="kitchen-line font-[family-name:var(--font-mono)] text-xs uppercase tracking-widest text-[var(--color-ink-muted)]">
+                    <tr className="bg-[var(--color-court)] font-[family-name:var(--font-mono)] text-xs uppercase tracking-widest text-white">
                       <th className="px-5 py-2.5">Name</th>
                       <th className="px-5 py-2.5">DUPR ID</th>
                       <th className="px-5 py-2.5" />
