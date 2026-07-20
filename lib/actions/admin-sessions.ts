@@ -91,7 +91,7 @@ export async function updateSession(
 ): Promise<SessionFormState> {
   const supabase = await createClient();
   try {
-    await requireAdminId(supabase);
+    await requireStaffId(supabase);
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Not authorized" };
   }

@@ -25,7 +25,7 @@ export default async function EditSessionPage({
     .eq("id", user.id)
     .single();
 
-  if (me?.role !== "admin") redirect("/dashboard");
+  if (me?.role !== "admin" && me?.role !== "manager") redirect("/dashboard");
 
   const [{ data: session }, { data: tournaments }] = await Promise.all([
     supabase
@@ -46,7 +46,7 @@ export default async function EditSessionPage({
     <div>
       <PageHeader eyebrow="Admin" title="Edit session" />
       <div className="mx-auto mt-8 max-w-6xl px-6 pb-16">
-        <AdminTabs active="/admin/sessions" />
+        <AdminTabs active="/admin/sessions" role={me?.role === "manager" ? "manager" : "admin"} />
         <div className="mt-6 max-w-lg rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-paper-raised)] p-6">
           <SessionForm
             action={boundUpdate}

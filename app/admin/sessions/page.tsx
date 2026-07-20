@@ -98,14 +98,12 @@ export default async function AdminSessionsPage() {
                     >
                       Fixtures
                     </Link>
-                    {me?.role === "admin" && (
-                      <Link
-                        href={`/admin/sessions/${s.id}/edit`}
-                        className="text-sm font-medium text-[var(--color-ink)] hover:text-[var(--color-court)]"
-                      >
-                        Edit
-                      </Link>
-                    )}
+                    <Link
+                      href={`/admin/sessions/${s.id}/edit`}
+                      className="text-sm font-medium text-[var(--color-ink)] hover:text-[var(--color-court)]"
+                    >
+                      Edit
+                    </Link>
                     <Link
                       href={`/admin/sessions/${s.id}/no-shows`}
                       className="text-sm font-medium text-[var(--color-ink)] hover:text-[var(--color-court)]"

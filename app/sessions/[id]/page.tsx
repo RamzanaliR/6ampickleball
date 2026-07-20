@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/page-header";
@@ -73,10 +74,11 @@ export default async function SessionDetailPage({
     .map((p) => displayName(p))
     .sort((a, b) => a.localeCompare(b));
 
-  const { data: knownGuests } =
-    player?.role === "admin"
-      ? await supabase.from("players").select("id, name").eq("is_guest", true).eq("status", "approved").order("name")
-      : { data: [] as { id: string; name: string }[] };
+  const isStaff = player?.role === "admin" || player?.role === "manager";
+
+  const { data: knownGuests } = isStaff
+    ? await supabase.from("players").select("id, name").eq("is_guest", true).eq("status", "approved").order("name")
+    : { data: [] as { id: string; name: string }[] };
 
   const { data: matchesData } = await supabase
     .from("matches")
@@ -162,6 +164,32 @@ export default async function SessionDetailPage({
         subtitle={`${formatSessionDate(session.date_time)} · ${formatSessionTime(session.date_time)} · ${session.location}`}
       />
       <div className="mx-auto mt-8 max-w-6xl px-6 pb-16">
+        {isStaff && (
+          <div className="mb-6 flex flex-wrap items-center gap-3 rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-paper-raised)] px-5 py-3">
+            <span className="font-[family-name:var(--font-mono)] text-xs uppercase tracking-widest text-[var(--color-ink-muted)]">
+              Staff
+            </span>
+            <Link
+              href={`/admin/sessions/${session.id}/edit`}
+              className="text-sm font-medium text-[var(--color-ink)] hover:text-[var(--color-court)]"
+            >
+              Edit session
+            </Link>
+            <Link
+              href={`/admin/sessions/${session.id}/fixtures`}
+              className="text-sm font-medium text-[var(--color-ink)] hover:text-[var(--color-court)]"
+            >
+              Fixtures
+            </Link>
+            <Link
+              href={`/admin/sessions/${session.id}/no-shows`}
+              className="text-sm font-medium text-[var(--color-ink)] hover:text-[var(--color-court)]"
+            >
+              No-shows
+            </Link>
+          </div>
+        )}
+
         {!session.counts_toward_leaderboard && (
           <div className="mb-6 rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-paper-raised)] px-5 py-3">
             <p className="text-sm text-[var(--color-ink-muted)]">
@@ -189,7 +217,7 @@ export default async function SessionDetailPage({
           ) : (
             <p className="mt-2 text-sm text-[var(--color-ink)]">{confirmedNames.join(", ")}</p>
           )}
-          {player?.role === "admin" && (
+          {isStaff && (
             <SessionAddGuestInline sessionId={session.id} knownGuests={knownGuests ?? []} />
           )}
         </div>
