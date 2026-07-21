@@ -8,9 +8,9 @@ import { ViewGuestsModal } from "@/components/view-guests-modal";
 
 type RsvpState = "confirmed" | "waitlisted" | "none";
 
-/** Always targets 3 rows — columns grow instead of rows once there are more than 3 names. */
+/** Fixed at up to 3 columns — rows grow instead of columns as the list gets longer. */
 function confirmedColumnCount(count: number) {
-  return Math.max(1, Math.ceil(count / 3));
+  return Math.max(1, Math.min(3, count));
 }
 
 const secondaryButtonClass =
