@@ -12,8 +12,10 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
+  modal,
 }: Readonly<{
   children: React.ReactNode;
+  modal: React.ReactNode;
 }>) {
   return (
     <html lang="en">
@@ -22,6 +24,7 @@ export default function RootLayout({
           <Nav />
         </div>
         <main className="flex-1">{children}</main>
+        {modal}
         <footer className="kitchen-line border-t-0 px-6 py-8 text-sm text-[var(--color-ink-muted)] font-[family-name:var(--font-mono)] print:hidden">
           6AM Pickleball Club · built for the community
         </footer>
