@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/page-header";
 import { EmptyState } from "@/components/empty-state";
 import { RsvpButton } from "@/components/rsvp-button";
+import { SessionCapacityMeter } from "@/components/session-capacity-meter";
 import { AddGuestModal } from "@/components/add-guest-modal";
 import { NoShowModal } from "@/components/no-show-modal";
 import { FixtureRoundNavigator } from "@/components/fixture-round-navigator";
@@ -165,66 +166,82 @@ export default async function SessionDetailPage({
         subtitle={`${formatSessionDate(session.date_time)} · ${formatSessionTime(session.date_time)} · ${session.location}`}
       />
       <div className="mx-auto mt-8 max-w-6xl px-6 pb-16">
-        {isStaff && (
-          <div className="mb-6 flex flex-wrap items-center gap-3 rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-paper-raised)] px-5 py-3">
-            <span className="font-[family-name:var(--font-mono)] text-xs uppercase tracking-widest text-[var(--color-ink-muted)]">
-              Staff
-            </span>
-            <Link
-              href={`/admin/sessions/${session.id}/edit`}
-              className="text-sm font-medium text-[var(--color-ink)] hover:text-[var(--color-court)]"
-            >
-              Edit session
-            </Link>
-            <Link
-              href={`/admin/sessions/${session.id}/fixtures`}
-              className="text-sm font-medium text-[var(--color-ink)] hover:text-[var(--color-court)]"
-            >
-              Fixtures
-            </Link>
-            <NoShowModal
-              sessionId={session.id}
-              triggerLabel="No-shows"
-              triggerClassName="text-sm font-medium text-[var(--color-ink)] hover:text-[var(--color-court)]"
-            />
+        {(!session.counts_toward_leaderboard || isStaff) && (
+          <div className="mb-6 flex flex-wrap items-center gap-x-4 gap-y-2">
+            {!session.counts_toward_leaderboard && (
+              <span className="rounded-[var(--radius-pill)] border border-[var(--color-line)] px-3 py-1 text-xs text-[var(--color-ink-muted)]">
+                Doesn&apos;t count toward the season leaderboard
+              </span>
+            )}
+            {isStaff && (
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+                <span className="font-[family-name:var(--font-mono)] text-xs uppercase tracking-widest text-[var(--color-ink-muted)]">
+                  Staff
+                </span>
+                <Link
+                  href={`/admin/sessions/${session.id}/edit`}
+                  className="font-medium text-[var(--color-ink-muted)] hover:text-[var(--color-court)]"
+                >
+                  Edit session
+                </Link>
+                <span className="text-[var(--color-line)]">·</span>
+                <Link
+                  href={`/admin/sessions/${session.id}/fixtures`}
+                  className="font-medium text-[var(--color-ink-muted)] hover:text-[var(--color-court)]"
+                >
+                  Fixtures
+                </Link>
+                <span className="text-[var(--color-line)]">·</span>
+                <NoShowModal
+                  sessionId={session.id}
+                  triggerLabel="No-shows"
+                  triggerClassName="font-medium text-[var(--color-ink-muted)] hover:text-[var(--color-court)]"
+                />
+              </div>
+            )}
           </div>
         )}
 
-        {!session.counts_toward_leaderboard && (
-          <div className="mb-6 rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-paper-raised)] px-5 py-3">
-            <p className="text-sm text-[var(--color-ink-muted)]">
-              This session&apos;s results don&apos;t count toward the season leaderboard.
-            </p>
-          </div>
-        )}
-        {session.status === "upcoming" && !hasFixtures && (
-          <div className="mb-8 flex items-center justify-between rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-paper-raised)] p-5">
-            <p className="text-sm text-[var(--color-ink-muted)]">
-              {spotsLeft > 0 ? `${spotsLeft} spots left` : "Full — waitlist open"}
-            </p>
-            <div className="w-40">
-              <RsvpButton sessionId={session.id} initialStatus={myStatus} full={spotsLeft <= 0} />
+        {/* Signature module: who's on court, and whether there's room */}
+        <div id="add-guest" className="mb-8 rounded-[var(--radius-card)] border border-[var(--color-court)]/30 bg-[var(--color-paper-raised)] p-6 scroll-mt-24">
+          {session.status === "upcoming" && !hasFixtures && (
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+              <div className="flex-1">
+                <SessionCapacityMeter capacity={session.capacity} filled={confirmedCount} />
+              </div>
+              <div className="w-full sm:w-44">
+                <RsvpButton sessionId={session.id} initialStatus={myStatus} full={spotsLeft <= 0} />
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        <div id="add-guest" className="mb-8 rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-paper-raised)] p-5 scroll-mt-24">
-          <p className="text-xs uppercase tracking-widest text-[var(--color-ink-muted)]">
-            Confirmed ({confirmedNames.length})
-          </p>
-          {confirmedNames.length === 0 ? (
-            <p className="mt-2 text-sm text-[var(--color-ink-muted)]">Nobody yet.</p>
-          ) : (
-            <p className="mt-2 text-sm text-[var(--color-ink)]">{confirmedNames.join(", ")}</p>
-          )}
-          {isStaff && (
-            <AddGuestModal
-              sessionId={session.id}
-              knownGuestNames={(knownGuests ?? []).map((g) => g.name)}
-              triggerLabel="+ Add guest"
-              triggerClassName="mt-3 text-sm font-medium text-[var(--color-court)] hover:text-[var(--color-court-dark)]"
-            />
-          )}
+          <div className={session.status === "upcoming" && !hasFixtures ? "kitchen-line mt-5 pt-5" : ""}>
+            <p className="font-[family-name:var(--font-mono)] text-xs uppercase tracking-widest text-[var(--color-ink-muted)]">
+              Confirmed ({confirmedNames.length})
+            </p>
+            {confirmedNames.length === 0 ? (
+              <p className="mt-2 text-sm text-[var(--color-ink-muted)]">Nobody yet.</p>
+            ) : (
+              <div className="mt-2.5 flex flex-wrap gap-1.5">
+                {confirmedNames.map((name) => (
+                  <span
+                    key={name}
+                    className="rounded-[var(--radius-pill)] border border-[var(--color-line)] bg-[var(--color-paper)] px-2.5 py-1 text-xs font-medium text-[var(--color-ink)]"
+                  >
+                    {name}
+                  </span>
+                ))}
+              </div>
+            )}
+            {isStaff && (
+              <AddGuestModal
+                sessionId={session.id}
+                knownGuestNames={(knownGuests ?? []).map((g) => g.name)}
+                triggerLabel="+ Add guest"
+                triggerClassName="mt-3 text-sm font-medium text-[var(--color-court)] hover:text-[var(--color-court-dark)]"
+              />
+            )}
+          </div>
         </div>
 
         {player?.role === "admin" && hasFixtures && matches.some((m) => (m.sets as MatchSet[]).length > 0) && (
