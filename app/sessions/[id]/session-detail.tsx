@@ -71,10 +71,10 @@ export async function SessionDetail({
   const spotsLeft = Math.max(session.capacity - confirmedCount, 0);
 
   const { data: confirmedPlayersData } = confirmedIds.length
-    ? await supabase.from("players").select("id, name, nickname").in("id", confirmedIds)
-    : { data: [] as { id: string; name: string; nickname: string | null }[] };
+    ? await supabase.from("players").select("id, name, nickname, is_guest").in("id", confirmedIds)
+    : { data: [] as { id: string; name: string; nickname: string | null; is_guest: boolean }[] };
   const confirmedNames = (confirmedPlayersData ?? [])
-    .map((p) => displayName(p))
+    .map((p) => (p.is_guest ? `${displayName(p)} (G)` : displayName(p)))
     .sort((a, b) => a.localeCompare(b));
 
   const isStaff = player?.role === "admin" || player?.role === "manager";

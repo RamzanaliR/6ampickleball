@@ -68,14 +68,20 @@ export default async function SessionsPage() {
     ...new Set((rsvps ?? []).filter((r) => r.status === "confirmed").map((r) => r.player_id)),
   ];
   const { data: confirmedPlayersData } = confirmedPlayerIds.length
-    ? await supabase.from("players").select("id, name, nickname").in("id", confirmedPlayerIds)
-    : { data: [] as { id: string; name: string; nickname: string | null }[] };
-  const nameById = new Map((confirmedPlayersData ?? []).map((p) => [p.id, displayName(p)]));
+    ? await supabase.from("players").select("id, name, nickname, is_guest").in("id", confirmedPlayerIds)
+    : { data: [] as { id: string; name: string; nickname: string | null; is_guest: boolean }[] };
+  const nameById = new Map(
+    (confirmedPlayersData ?? []).map((p) => [p.id, p.is_guest ? `${displayName(p)} (G)` : displayName(p)])
+  );
 
   const sessionsWithFixtures = new Set((fixtureMatches ?? []).map((m) => m.session_id));
 
-  const current = allUpcoming.filter((s) => sessionsWithFixtures.has(s.id));
-  const upcoming = allUpcoming.filter((s) => !sessionsWithFixtures.has(s.id));
+  const todayInDar = new Date().toLocaleDateString("en-CA", { timeZone: "Africa/Dar_es_Salaam" });
+  const isToday = (iso: string) =>
+    new Date(iso).toLocaleDateString("en-CA", { timeZone: "Africa/Dar_es_Salaam" }) === todayInDar;
+
+  const current = allUpcoming.filter((s) => isToday(s.date_time));
+  const upcoming = allUpcoming.filter((s) => !isToday(s.date_time));
 
   const confirmedCountBySession = new Map<string, number>();
   const confirmedNamesBySession = new Map<string, string[]>();
@@ -130,21 +136,25 @@ export default async function SessionsPage() {
             </h2>
             <div className="mt-4">
               {current.length === 0 ? (
-                <EmptyState message="No session in progress right now." />
+                <EmptyState message="No session today." />
               ) : (
                 <div className="space-y-4">
-                  {current.map((s) => (
-                    <SessionCard
-                      key={s.id}
-                      session={s}
-                      spotsLeft={0}
-                      myStatus={myStatusBySession.get(s.id) ?? "none"}
-                      confirmedNames={confirmedNamesBySession.get(s.id) ?? []}
-                      isStaff={isStaff}
-                      knownGuestNames={knownGuestNames}
-                      variant="current"
-                    />
-                  ))}
+                  {current.map((s) => {
+                    const confirmedCount = confirmedCountBySession.get(s.id) ?? 0;
+                    const spotsLeft = Math.max(s.capacity - confirmedCount, 0);
+                    return (
+                      <SessionCard
+                        key={s.id}
+                        session={s}
+                        spotsLeft={spotsLeft}
+                        myStatus={myStatusBySession.get(s.id) ?? "none"}
+                        confirmedNames={confirmedNamesBySession.get(s.id) ?? []}
+                        isStaff={isStaff}
+                        knownGuestNames={knownGuestNames}
+                        variant={sessionsWithFixtures.has(s.id) ? "current" : "upcoming"}
+                      />
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -172,6 +182,7 @@ export default async function SessionsPage() {
                         confirmedNames={confirmedNamesBySession.get(s.id) ?? []}
                         isStaff={isStaff}
                         knownGuestNames={knownGuestNames}
+                        variant={sessionsWithFixtures.has(s.id) ? "current" : "upcoming"}
                       />
                     );
                   })}

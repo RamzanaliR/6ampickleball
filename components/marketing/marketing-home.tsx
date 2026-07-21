@@ -2,12 +2,13 @@ import Image from "next/image";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { formatSessionDate } from "@/lib/format";
+import { getHeroSettings } from "@/lib/actions/hero-settings";
 import type { FeedMediaItem } from "@/lib/types";
 
 export async function MarketingHome() {
   const supabase = await createClient();
 
-  const [{ data: events }, statsResult] = await Promise.all([
+  const [{ data: events }, statsResult, hero] = await Promise.all([
     supabase
       .from("community_feed")
       .select("id, content, media, image_url, created_at")
@@ -15,6 +16,7 @@ export async function MarketingHome() {
       .order("created_at", { ascending: false })
       .limit(6),
     supabase.rpc("club_public_stats").single(),
+    getHeroSettings(),
   ]);
   const stats = statsResult.data as
     | { members: number; sessions_hosted: number; matches_played: number }
@@ -34,13 +36,12 @@ export async function MarketingHome() {
 
   return (
     <div>
-      {/* Hero — full-bleed layout (Option A) with the real club photo.
-          To swap the photo later: replace /public/hero.jpg (keep the
-          same filename), or update the url() below. */}
+      {/* Hero — full-bleed layout (Option A). Image, copy, and both
+          buttons are editable from Admin → Homepage. */}
       <section
         className="relative flex min-h-[520px] items-end overflow-hidden md:min-h-[640px]"
         style={{
-          background: "url('/hero.jpg') center/cover no-repeat",
+          background: `url('${hero.heroImageUrl}') center/cover no-repeat`,
         }}
       >
         <div
@@ -51,32 +52,39 @@ export async function MarketingHome() {
           }}
         />
         <div className="relative mx-auto w-full max-w-6xl px-6 pb-10 pt-20 sm:pb-16 sm:pt-32">
-          <p className="font-[family-name:var(--font-mono)] text-sm uppercase tracking-widest text-[var(--color-ball)]">
-            6AM Pickleball Club • Dar es Salaam
-          </p>
+          {hero.heroEyebrow && (
+            <p className="font-[family-name:var(--font-mono)] text-sm uppercase tracking-widest text-[var(--color-ball)]">
+              {hero.heroEyebrow}
+            </p>
+          )}
           <h1 className="mt-4 max-w-2xl font-[family-name:var(--font-display)] text-4xl font-extrabold uppercase leading-[1.05] tracking-tight text-white md:text-6xl">
-            When the courts opens
-            <br />
-            before the city wake up
+            {hero.heroHeadline.split("\n").map((line, i, arr) => (
+              <span key={i}>
+                {line}
+                {i < arr.length - 1 && <br />}
+              </span>
+            ))}
           </h1>
-          <p className="mt-4 max-w-xl text-sm text-white/80 sm:mt-6 sm:text-lg">
-            A Dar es Salaam pickleball family that starts the day together —
-            early mornings, good rallies, and friendships that outlast the
-            session.
-          </p>
+          {hero.heroSubtext && (
+            <p className="mt-4 max-w-xl text-sm text-white/80 sm:mt-6 sm:text-lg">
+              {hero.heroSubtext}
+            </p>
+          )}
           <div className="mt-6 flex flex-nowrap items-center gap-2 sm:mt-8 sm:gap-4">
             <Link
-              href="/signup"
+              href={hero.heroButton1Href}
               className="whitespace-nowrap rounded-[var(--radius-pill)] bg-[var(--color-court)] px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-[var(--color-court-dark)] sm:px-6 sm:py-3 sm:text-base"
             >
-              Request to join
+              {hero.heroButton1Label}
             </Link>
-            <Link
-              href="#events"
-              className="whitespace-nowrap rounded-[var(--radius-pill)] border border-white/40 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:border-white hover:bg-white/10 sm:px-6 sm:py-3 sm:text-base"
-            >
-              See what we&apos;re about
-            </Link>
+            {hero.heroButton2Label && hero.heroButton2Href && (
+              <Link
+                href={hero.heroButton2Href}
+                className="whitespace-nowrap rounded-[var(--radius-pill)] border border-white/40 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:border-white hover:bg-white/10 sm:px-6 sm:py-3 sm:text-base"
+              >
+                {hero.heroButton2Label}
+              </Link>
+            )}
           </div>
         </div>
       </section>

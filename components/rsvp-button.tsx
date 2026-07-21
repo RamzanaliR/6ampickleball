@@ -48,7 +48,7 @@ export function RsvpButton({
 
   const label =
     initialStatus === "confirmed"
-      ? "Cancel"
+      ? "Back Out"
       : initialStatus === "waitlisted"
         ? "Leave waitlist"
         : full
@@ -56,7 +56,7 @@ export function RsvpButton({
           : "I'm in";
 
   const isCancelStyle = initialStatus !== "none";
-  const showCheck = label === "I'm in" || label === "Cancel";
+  const showCheck = label === "I'm in";
 
   return (
     <div>
@@ -65,7 +65,7 @@ export function RsvpButton({
         disabled={isPending}
         className={
           isCancelStyle
-            ? "w-full rounded-[var(--radius-pill)] border border-[var(--color-line)] px-4 py-2 text-sm font-medium text-[var(--color-ink)] transition-colors hover:border-[var(--color-danger)] hover:text-[var(--color-danger)] disabled:opacity-60"
+            ? "w-full rounded-[var(--radius-pill)] bg-[var(--color-ink-muted)]/15 px-4 py-2 text-sm font-medium text-[var(--color-ink-muted)] transition-colors hover:bg-[var(--color-ink-muted)]/25 disabled:opacity-60"
             : "w-full rounded-[var(--radius-pill)] bg-[var(--color-court)] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[var(--color-court-dark)] disabled:opacity-60"
         }
       >

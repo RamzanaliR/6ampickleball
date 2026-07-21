@@ -7,6 +7,7 @@ const tabs = [
   { href: "/admin/tournaments", label: "Tournaments" },
   { href: "/admin/payments", label: "Finances" },
   { href: "/admin/feed", label: "The Club" },
+  { href: "/admin/hero", label: "Homepage" },
 ];
 
 // Managers only get the tabs that lead to pages they actually have
