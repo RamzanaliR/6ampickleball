@@ -73,9 +73,15 @@ export async function SessionDetail({
   const { data: confirmedPlayersData } = confirmedIds.length
     ? await supabase.from("players").select("id, name, nickname, is_guest").in("id", confirmedIds)
     : { data: [] as { id: string; name: string; nickname: string | null; is_guest: boolean }[] };
-  const confirmedNames = (confirmedPlayersData ?? [])
-    .map((p) => (p.is_guest ? `${displayName(p)} (G)` : displayName(p)))
+  const confirmedMembers = (confirmedPlayersData ?? [])
+    .filter((p) => !p.is_guest)
+    .map((p) => displayName(p))
     .sort((a, b) => a.localeCompare(b));
+  const confirmedGuests = (confirmedPlayersData ?? [])
+    .filter((p) => p.is_guest)
+    .map((p) => `${displayName(p)} (G)`)
+    .sort((a, b) => a.localeCompare(b));
+  const confirmedNames = [...confirmedMembers, ...confirmedGuests];
 
   const isStaff = player?.role === "admin" || player?.role === "manager";
 

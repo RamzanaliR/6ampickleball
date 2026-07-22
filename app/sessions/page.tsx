@@ -100,8 +100,10 @@ export default async function SessionsPage() {
       myStatusBySession.set(r.session_id, r.status as RsvpState);
     }
   }
-  for (const names of confirmedNamesBySession.values()) {
-    names.sort((a, b) => a.localeCompare(b));
+  for (const [sessionId, list] of confirmedNamesBySession) {
+    const members = list.filter((n) => !n.endsWith(" (G)")).sort((a, b) => a.localeCompare(b));
+    const guests = list.filter((n) => n.endsWith(" (G)")).sort((a, b) => a.localeCompare(b));
+    confirmedNamesBySession.set(sessionId, [...members, ...guests]);
   }
 
   const isStaff = player?.role === "admin" || player?.role === "manager";

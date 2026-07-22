@@ -8,7 +8,7 @@ import { ViewGuestsModal } from "@/components/view-guests-modal";
 
 type RsvpState = "confirmed" | "waitlisted" | "none";
 
-/** Always 3 columns once there's more than a couple names, so long names like "Dr Maysam" have room. */
+/** Row-major "snake" order (left-to-right, top-to-bottom) across up to 3 columns. */
 function confirmedColumnCount(count: number) {
   return Math.min(3, Math.max(1, count));
 }
@@ -43,6 +43,7 @@ export function SessionCard({
   const full = spotsLeft <= 0;
   const names = confirmedNames ?? [];
   const columns = confirmedColumnCount(names.length);
+  const guestCount = names.filter((n) => n.endsWith(" (G)")).length;
 
   return (
     <div className="rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-paper-raised)] p-6">
@@ -77,10 +78,19 @@ export function SessionCard({
             <div className="mt-4">
               <p className="text-xs font-medium text-[var(--color-ink)]">
                 Confirmed: ({names.length})
+                {guestCount > 0 && (
+                  <span className="font-normal text-[var(--color-ink-muted)]">
+                    {" "}
+                    — {names.length - guestCount} members, {guestCount} guests
+                  </span>
+                )}
               </p>
-              <div className="mt-1.5 gap-x-6 text-xs text-[var(--color-ink-muted)]" style={{ columns }}>
+              <div
+                className="mt-1.5 grid gap-x-6 gap-y-0.5 text-xs text-[var(--color-ink-muted)]"
+                style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}
+              >
                 {names.map((name) => (
-                  <p key={name} className="break-inside-avoid py-0.5">
+                  <p key={name} className="py-0.5">
                     {name}
                   </p>
                 ))}
