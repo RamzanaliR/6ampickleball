@@ -1,6 +1,8 @@
 const DAR_LAT = -6.7924;
 const DAR_LON = 39.2083;
 
+export const RAIN_RISK_THRESHOLD = 0.75; // 75% — only ever alert at/above this
+
 export type RainRisk = { pop: number; description: string };
 
 /**

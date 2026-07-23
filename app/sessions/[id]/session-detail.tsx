@@ -15,6 +15,7 @@ import { ExportMatchesCsvButton } from "@/components/export-matches-csv-button";
 import { computeStandings, sortStandings } from "@/lib/fixtures/standings";
 import { formatSessionDate, formatSessionTime, toDarDateInputValue, displayName } from "@/lib/format";
 import type { FixtureSettings, MatchSet } from "@/lib/types";
+import { RAIN_RISK_THRESHOLD } from "@/lib/weather";
 
 export async function SessionDetail({
   id,
@@ -195,7 +196,7 @@ export async function SessionDetail({
         />
       )}
       <div className={compact ? "mx-auto mt-4 max-w-6xl px-6 pb-6" : "mx-auto mt-8 max-w-6xl px-6 pb-16"}>
-        {rainRisk && rainRisk.pop >= 0.4 && (
+        {rainRisk && rainRisk.pop >= RAIN_RISK_THRESHOLD && (
           <p className="mb-4 rounded-[var(--radius-input)] bg-[var(--color-danger-bg)] px-3 py-2 text-sm font-medium text-[var(--color-danger)]">
             ⚠️ {Math.round(rainRisk.pop * 100)}% chance of rain — have a backup plan
           </p>

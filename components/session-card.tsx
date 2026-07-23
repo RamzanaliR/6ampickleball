@@ -5,6 +5,7 @@ import { WhatsAppShareButton } from "@/components/whatsapp-share-button";
 import { AddGuestModal } from "@/components/add-guest-modal";
 import { NoShowModal } from "@/components/no-show-modal";
 import { ViewGuestsModal } from "@/components/view-guests-modal";
+import { RAIN_RISK_THRESHOLD } from "@/lib/weather";
 
 type RsvpState = "confirmed" | "waitlisted" | "none";
 
@@ -80,7 +81,7 @@ export function SessionCard({
             )}
           </Link>
 
-          {rainRisk && rainRisk.pop >= 0.4 && (
+          {rainRisk && rainRisk.pop >= RAIN_RISK_THRESHOLD && (
             <p className="mt-2 rounded-[var(--radius-input)] bg-[var(--color-danger-bg)] px-3 py-1.5 text-xs font-medium text-[var(--color-danger)]">
               ⚠️ {Math.round(rainRisk.pop * 100)}% chance of rain — have a backup plan
             </p>

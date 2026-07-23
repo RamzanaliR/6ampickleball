@@ -1,0 +1,19 @@
+name: Weather rain-risk alerts
+
+# Runs once a day in the evening (18:00 UTC = 21:00 EAT), checking any
+# session in the next ~36 hours against the rain forecast. Only alerts
+# at 75%+ chance of rain, and only once per session (see
+# lib/notifications/weather-triggers.ts).
+on:
+  schedule:
+    - cron: "0 18 * * *"
+  workflow_dispatch: {} # lets you manually trigger a run from the Actions tab, for testing
+
+jobs:
+  ping-weather-endpoint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call weather-alerts endpoint
+        run: |
+          curl -sf -X GET "https://6ampickleball.vercel.app/api/cron/weather-alerts" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
