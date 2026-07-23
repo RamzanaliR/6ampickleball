@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { generateClassicRobin, winningTeamFromSets } from "@/lib/fixtures/generate-classic-robin";
 import type { FixtureSettings, MatchSet } from "@/lib/types";
 import { requireAdminId as requireAdmin, requireStaffId } from "@/lib/auth/roles";
+import { notifyFixturesReady } from "@/lib/notifications/session-triggers";
 
 export type GenerateFixturesState = { error?: string };
 
@@ -80,6 +81,8 @@ export async function generateFixtures(
 
   const settings: FixtureSettings = { courts, roundMinutesLabel, scoring, rankBy, tiebreak };
   await supabase.from("sessions").update({ fixture_settings: settings }).eq("id", sessionId);
+
+  await notifyFixturesReady(sessionId);
 
   revalidatePath(`/admin/sessions/${sessionId}/fixtures`);
   return {};
@@ -163,6 +166,8 @@ export async function regenerateFixtures(
 
   const settings: FixtureSettings = { courts, roundMinutesLabel, scoring, rankBy, tiebreak };
   await supabase.from("sessions").update({ fixture_settings: settings }).eq("id", sessionId);
+
+  await notifyFixturesReady(sessionId);
 
   revalidatePath(`/admin/sessions/${sessionId}/fixtures`);
   revalidatePath(`/sessions/${sessionId}`);

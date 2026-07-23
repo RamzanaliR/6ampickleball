@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { checkSpotsThresholds } from "@/lib/notifications/session-triggers";
 
 export type AddGuestState = { error?: string; success?: boolean };
 
@@ -26,6 +27,8 @@ export async function addGuestToSession(
   });
 
   if (error) return { error: error.message };
+
+  await checkSpotsThresholds(sessionId);
 
   revalidatePath(`/admin/sessions/${sessionId}/no-shows`);
   revalidatePath(`/admin/sessions/${sessionId}/fixtures`);
@@ -139,6 +142,8 @@ export async function addParticipantNamesToSession(
     }
   }
 
+  await checkSpotsThresholds(sessionId);
+
   revalidatePath(`/admin/sessions/${sessionId}/fixtures`);
   revalidatePath(`/admin/sessions/${sessionId}/no-shows`);
   revalidatePath(`/sessions/${sessionId}`);
@@ -197,6 +202,8 @@ export async function addGuestNamesToSession(
     if (error) return { error: `${name}: ${error.message}` };
   }
 
+  await checkSpotsThresholds(sessionId);
+
   revalidatePath(`/admin/sessions/${sessionId}/no-shows`);
   revalidatePath(`/admin/sessions/${sessionId}/fixtures`);
   revalidatePath(`/sessions/${sessionId}`);
@@ -243,6 +250,8 @@ export async function addMemberToSession(
       { onConflict: "player_id,session_id" }
     );
   if (error) return { error: error.message };
+
+  await checkSpotsThresholds(sessionId);
 
   revalidatePath(`/admin/sessions/${sessionId}/no-shows`);
   revalidatePath(`/admin/sessions/${sessionId}/fixtures`);

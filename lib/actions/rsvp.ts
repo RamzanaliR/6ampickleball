@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { checkSpotsThresholds } from "@/lib/notifications/session-triggers";
 
 export async function rsvpToSession(sessionId: string) {
   const supabase = await createClient();
@@ -9,6 +10,7 @@ export async function rsvpToSession(sessionId: string) {
     p_session_id: sessionId,
   });
   if (error) throw new Error(error.message);
+  await checkSpotsThresholds(sessionId);
   revalidatePath("/sessions");
   revalidatePath("/dashboard");
 }

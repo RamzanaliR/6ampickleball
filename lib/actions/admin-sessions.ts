@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { darDateTimeToISO } from "@/lib/format";
 import { requireAdminId, requireStaffId } from "@/lib/auth/roles";
+import { notifyNewSession } from "@/lib/notifications/session-triggers";
 
 export type SessionFormState = { error?: string };
 
@@ -65,19 +66,27 @@ export async function createSession(
   const fields = readSessionFields(formData);
   if ("error" in fields) return fields;
 
-  const { error } = await supabase.from("sessions").insert({
-    title: fields.title,
-    date_time: fields.dateTime,
-    location: fields.location,
-    capacity: fields.capacity,
-    courts: fields.courts,
-    counts_toward_leaderboard: fields.countsTowardLeaderboard,
-    dupr_eligible: fields.duprEligible,
-    tournament_id: fields.tournamentId,
-    created_by: adminId,
-  });
+  const { data: inserted, error } = await supabase
+    .from("sessions")
+    .insert({
+      title: fields.title,
+      date_time: fields.dateTime,
+      location: fields.location,
+      capacity: fields.capacity,
+      courts: fields.courts,
+      counts_toward_leaderboard: fields.countsTowardLeaderboard,
+      dupr_eligible: fields.duprEligible,
+      tournament_id: fields.tournamentId,
+      created_by: adminId,
+    })
+    .select("id")
+    .single();
 
   if (error) return { error: error.message };
+
+  if (inserted) {
+    await notifyNewSession(inserted.id);
+  }
 
   revalidatePath("/admin/sessions");
   revalidatePath("/sessions");
