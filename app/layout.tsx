@@ -6,6 +6,7 @@ import "./globals.css";
 import { Nav } from "@/components/nav";
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://6ampickleball.vercel.app"),
   title: "6AM Pickleball Club",
   description: "Sessions, standings, and results for the community.",
   manifest: "/manifest.webmanifest",

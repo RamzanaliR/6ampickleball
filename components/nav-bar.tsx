@@ -26,6 +26,7 @@ const marketingLinks = [
   { href: "/#about", label: "About" },
   { href: "/#events", label: "Events" },
   { href: "/#stats", label: "Numbers" },
+  { href: "/highlights", label: "Highlights" },
 ];
 
 export function NavBar({ user }: { user: NavUser }) {

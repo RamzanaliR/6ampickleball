@@ -145,6 +145,12 @@ export async function MarketingHome() {
             <p className="mt-2 text-[var(--color-ink-muted)]">
               Highlights from recent sessions and get-togethers.
             </p>
+            <Link
+              href="/highlights"
+              className="mt-2 inline-block text-sm font-medium text-[var(--color-court)] hover:text-[var(--color-court-dark)]"
+            >
+              See the full leaderboard & highlights →
+            </Link>
 
             {eventCards.length === 0 ? (
               <p className="mt-8 text-sm text-[var(--color-ink-muted)]">
