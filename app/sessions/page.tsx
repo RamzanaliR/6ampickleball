@@ -5,6 +5,7 @@ import { PageHeader } from "@/components/page-header";
 import { EmptyState } from "@/components/empty-state";
 import { SessionCard } from "@/components/session-card";
 import { formatSessionDate, formatSessionTime, displayName } from "@/lib/format";
+import { getDarEsSalaamMorningRain } from "@/lib/weather";
 
 type RsvpState = "confirmed" | "waitlisted" | "none";
 
@@ -107,6 +108,9 @@ export default async function SessionsPage() {
   }
 
   const isStaff = player?.role === "admin" || player?.role === "manager";
+  const rainForecast = await getDarEsSalaamMorningRain();
+  const rainRiskFor = (dateTimeIso: string) =>
+    rainForecast.get(new Date(dateTimeIso).toLocaleDateString("en-CA", { timeZone: "Africa/Dar_es_Salaam" })) ?? null;
 
   const { data: knownGuestsData } = isStaff
     ? await supabase.from("players").select("name").eq("is_guest", true).eq("status", "approved").order("name")
@@ -154,6 +158,7 @@ export default async function SessionsPage() {
                         isStaff={isStaff}
                         knownGuestNames={knownGuestNames}
                         variant={sessionsWithFixtures.has(s.id) ? "current" : "upcoming"}
+                        rainRisk={rainRiskFor(s.date_time)}
                       />
                     );
                   })}
@@ -185,6 +190,7 @@ export default async function SessionsPage() {
                         isStaff={isStaff}
                         knownGuestNames={knownGuestNames}
                         variant={sessionsWithFixtures.has(s.id) ? "current" : "upcoming"}
+                        rainRisk={rainRiskFor(s.date_time)}
                       />
                     );
                   })}

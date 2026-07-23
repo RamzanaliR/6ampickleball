@@ -86,6 +86,34 @@ export default async function DashboardPage() {
   const notificationPrefs = await getNotificationPreferences();
   const isStaff = player?.role === "admin" || player?.role === "manager";
 
+  // Attendance streak: consecutive completed sessions (most recent first)
+  // where the player was confirmed and not marked a no-show. Breaks the
+  // moment a completed session is missed.
+  const { data: completedSessions } = await supabase
+    .from("sessions")
+    .select("id")
+    .eq("status", "completed")
+    .order("date_time", { ascending: false });
+  const completedIds = (completedSessions ?? []).map((s) => s.id);
+  const { data: myCompletedRsvps } = completedIds.length
+    ? await supabase
+        .from("rsvps")
+        .select("session_id, status, no_show")
+        .eq("player_id", user.id)
+        .in("session_id", completedIds)
+    : { data: [] as { session_id: string; status: string; no_show: boolean }[] };
+  const rsvpBySessionId = new Map((myCompletedRsvps ?? []).map((r) => [r.session_id, r]));
+
+  let attendanceStreak = 0;
+  for (const s of completedSessions ?? []) {
+    const rsvp = rsvpBySessionId.get(s.id);
+    if (rsvp && rsvp.status === "confirmed" && !rsvp.no_show) {
+      attendanceStreak += 1;
+    } else {
+      break;
+    }
+  }
+
   return (
     <div>
       <NotificationPromptModal />
@@ -94,6 +122,11 @@ export default async function DashboardPage() {
         title={`Hey, ${(player ? displayName(player) : "").split(" ")[0] || "there"}`}
       />
       <div className="mx-auto mt-8 max-w-6xl px-6 pb-16">
+        {attendanceStreak >= 2 && (
+          <div className="mb-4 inline-flex items-center gap-2 rounded-[var(--radius-pill)] border border-[var(--color-court)]/30 bg-[var(--color-court)]/10 px-4 py-2 text-sm font-medium text-[var(--color-court)]">
+            🔥 {attendanceStreak}-session streak
+          </div>
+        )}
         <div className="grid grid-cols-3 divide-x divide-[var(--color-line)] overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-paper-raised)]">
           <StatCard label="Points" value={player?.points ?? 0} />
           <StatCard label="Wins" value={player?.wins ?? 0} />

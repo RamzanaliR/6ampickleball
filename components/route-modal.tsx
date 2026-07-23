@@ -16,10 +16,27 @@ export function RouteModal({ children }: { children: React.ReactNode }) {
       if (e.key === "Escape") close();
     }
     document.addEventListener("keydown", onKeyDown);
-    document.body.style.overflow = "hidden";
+
+    // Plain `overflow: hidden` on body doesn't reliably stop background
+    // scroll/rubber-banding on iOS Safari. Locking the body in place with
+    // position:fixed (and restoring the exact scroll offset on close) is
+    // the pattern that actually holds on iOS.
+    const scrollY = window.scrollY;
+    const body = document.body;
+    body.style.position = "fixed";
+    body.style.top = `-${scrollY}px`;
+    body.style.left = "0";
+    body.style.right = "0";
+    body.style.overflow = "hidden";
+
     return () => {
       document.removeEventListener("keydown", onKeyDown);
-      document.body.style.overflow = "";
+      body.style.position = "";
+      body.style.top = "";
+      body.style.left = "";
+      body.style.right = "";
+      body.style.overflow = "";
+      window.scrollTo(0, scrollY);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

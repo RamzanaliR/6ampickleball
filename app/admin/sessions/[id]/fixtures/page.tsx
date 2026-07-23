@@ -201,8 +201,11 @@ export default async function SessionFixturesPage({
                 {!confirmedPlayers || confirmedPlayers.length === 0 ? (
                   <p className="mt-2 text-sm text-[var(--color-ink-muted)]">Nobody yet.</p>
                 ) : (
-                  <div className="mt-2 grid grid-cols-3 gap-x-4 gap-y-1 text-sm text-[var(--color-ink)]">
-                    {confirmedPlayers.map((p) => (
+                  <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-sm text-[var(--color-ink)] sm:grid-cols-3">
+                    {[
+                      ...confirmedPlayers.filter((p) => !p.is_guest).sort((a, b) => a.name.localeCompare(b.name)),
+                      ...confirmedPlayers.filter((p) => p.is_guest).sort((a, b) => a.name.localeCompare(b.name)),
+                    ].map((p) => (
                       <p key={p.id}>
                         {p.name}
                         {p.is_guest && (

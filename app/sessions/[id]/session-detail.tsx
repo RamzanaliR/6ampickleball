@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getDarEsSalaamMorningRain } from "@/lib/weather";
 import { PageHeader } from "@/components/page-header";
 import { EmptyState } from "@/components/empty-state";
 import { RsvpButton } from "@/components/rsvp-button";
@@ -53,6 +54,12 @@ export async function SessionDetail({
     .single();
 
   if (!session) notFound();
+
+  const rainForecast = await getDarEsSalaamMorningRain();
+  const rainRisk =
+    rainForecast.get(
+      new Date(session.date_time).toLocaleDateString("en-CA", { timeZone: "Africa/Dar_es_Salaam" })
+    ) ?? null;
 
   const { data: myRsvp } = await supabase
     .from("rsvps")
@@ -188,6 +195,11 @@ export async function SessionDetail({
         />
       )}
       <div className={compact ? "mx-auto mt-4 max-w-6xl px-6 pb-6" : "mx-auto mt-8 max-w-6xl px-6 pb-16"}>
+        {rainRisk && rainRisk.pop >= 0.4 && (
+          <p className="mb-4 rounded-[var(--radius-input)] bg-[var(--color-danger-bg)] px-3 py-2 text-sm font-medium text-[var(--color-danger)]">
+            ⚠️ {Math.round(rainRisk.pop * 100)}% chance of rain — have a backup plan
+          </p>
+        )}
         {(!session.counts_toward_leaderboard || isStaff) && (
           <div className="mb-6 flex flex-wrap items-center gap-x-4 gap-y-2">
             {!session.counts_toward_leaderboard && (

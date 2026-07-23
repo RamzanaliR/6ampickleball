@@ -8,9 +8,13 @@ import { ViewGuestsModal } from "@/components/view-guests-modal";
 
 type RsvpState = "confirmed" | "waitlisted" | "none";
 
-/** Row-major "snake" order (left-to-right, top-to-bottom) across up to 3 columns. */
-function confirmedColumnCount(count: number) {
-  return Math.min(3, Math.max(1, count));
+/** Row-major "snake" order (left-to-right, top-to-bottom). Caps at 2
+ *  columns on narrow screens so long names don't wrap and throw off
+ *  row heights — widens to 3 from `sm` up. */
+function confirmedGridClass(count: number) {
+  if (count <= 1) return "grid-cols-1";
+  if (count === 2) return "grid-cols-2";
+  return "grid-cols-2 sm:grid-cols-3";
 }
 
 const secondaryButtonClass =
@@ -24,6 +28,7 @@ export function SessionCard({
   isStaff = false,
   knownGuestNames = [],
   variant = "upcoming",
+  rainRisk,
 }: {
   session: {
     id: string;
@@ -39,10 +44,11 @@ export function SessionCard({
   isStaff?: boolean;
   knownGuestNames?: string[];
   variant?: "upcoming" | "current";
+  rainRisk?: { pop: number; description: string } | null;
 }) {
   const full = spotsLeft <= 0;
   const names = confirmedNames ?? [];
-  const columns = confirmedColumnCount(names.length);
+  const columns = confirmedGridClass(names.length);
   const guestCount = names.filter((n) => n.endsWith(" (G)")).length;
 
   return (
@@ -74,6 +80,12 @@ export function SessionCard({
             )}
           </Link>
 
+          {rainRisk && rainRisk.pop >= 0.4 && (
+            <p className="mt-2 rounded-[var(--radius-input)] bg-[var(--color-danger-bg)] px-3 py-1.5 text-xs font-medium text-[var(--color-danger)]">
+              ⚠️ {Math.round(rainRisk.pop * 100)}% chance of rain — have a backup plan
+            </p>
+          )}
+
           {names.length > 0 && (
             <div className="mt-4">
               <p className="text-xs font-medium text-[var(--color-ink)]">
@@ -85,10 +97,7 @@ export function SessionCard({
                   </span>
                 )}
               </p>
-              <div
-                className="mt-1.5 grid gap-x-6 gap-y-0.5 text-xs text-[var(--color-ink-muted)]"
-                style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}
-              >
+              <div className={`mt-1.5 grid ${columns} gap-x-6 gap-y-0.5 text-xs text-[var(--color-ink-muted)]`}>
                 {names.map((name) => (
                   <p key={name} className="py-0.5">
                     {name}
