@@ -39,7 +39,12 @@ export async function GET(request: Request) {
         .select("player_id")
         .eq("session_id", session.id)
         .eq("status", "confirmed");
-      const playerIds = (rsvps ?? []).map((r) => r.player_id);
+      const confirmedIds = (rsvps ?? []).map((r) => r.player_id);
+
+      const { data: optedIn } = confirmedIds.length
+        ? await admin.from("players").select("id").in("id", confirmedIds).eq("notify_reminders", true)
+        : { data: [] as { id: string }[] };
+      const playerIds = (optedIn ?? []).map((p) => p.id);
 
       if (playerIds.length > 0) {
         const result = await sendPushToPlayerIds(playerIds, {

@@ -4,8 +4,9 @@ import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/page-header";
 import { EmptyState } from "@/components/empty-state";
 import { ProfileOverview } from "@/components/profile-overview";
-import { NotificationSettings } from "@/components/notification-settings";
+import { NotificationsPanel } from "@/components/notifications-panel";
 import { NotificationPromptModal } from "@/components/notification-prompt-modal";
+import { getNotificationPreferences } from "@/lib/actions/notification-preferences";
 import { MatchHistoryList } from "@/components/match-history-list";
 import { formatSessionDate, formatSessionTime, formatTZS, displayName } from "@/lib/format";
 import type { MatchSet } from "@/lib/types";
@@ -20,7 +21,7 @@ export default async function DashboardPage() {
 
   const { data: player } = await supabase
     .from("players")
-    .select("name, nickname, phone, status, dupr_id, points, wins, losses")
+    .select("name, nickname, phone, status, dupr_id, points, wins, losses, role")
     .eq("id", user.id)
     .single();
 
@@ -82,6 +83,8 @@ export default async function DashboardPage() {
     ? await supabase.from("sessions").select("id, title").in("id", paymentSessionIds)
     : { data: [] as { id: string; title: string }[] };
   const paymentSessionTitleById = new Map((paymentSessions ?? []).map((s) => [s.id, s.title]));
+  const notificationPrefs = await getNotificationPreferences();
+  const isStaff = player?.role === "admin" || player?.role === "manager";
 
   return (
     <div>
@@ -152,9 +155,15 @@ export default async function DashboardPage() {
                 phone={player?.phone ?? null}
                 duprId={player?.dupr_id ?? null}
               />
-              <div className="kitchen-line mt-5 pt-5">
-                <NotificationSettings />
-              </div>
+            </div>
+          </section>
+
+          <section>
+            <h2 className="font-[family-name:var(--font-display)] text-xl font-bold uppercase tracking-tight text-[var(--color-ink)]">
+              Notifications
+            </h2>
+            <div className="mt-4 rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-paper-raised)] p-6">
+              <NotificationsPanel initialPrefs={notificationPrefs} isStaff={isStaff} />
             </div>
           </section>
 

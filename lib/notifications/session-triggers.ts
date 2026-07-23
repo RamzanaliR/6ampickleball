@@ -6,7 +6,8 @@ const SPOT_THRESHOLDS = [10, 5, 2];
 
 /**
  * Fired once, right after a session is created. Notifies every
- * approved member (not guests — they have no login/subscription).
+ * approved member (not guests — they have no login/subscription) who
+ * hasn't opted out of this category.
  * No dedup column needed since this only ever runs once, synchronously,
  * from createSession itself.
  */
@@ -24,7 +25,8 @@ export async function notifyNewSession(sessionId: string) {
       .from("players")
       .select("id")
       .eq("status", "approved")
-      .eq("is_guest", false);
+      .eq("is_guest", false)
+      .eq("notify_new_session", true);
 
     await sendPushToPlayerIds(
       (members ?? []).map((p) => p.id),
@@ -44,8 +46,8 @@ export async function notifyNewSession(sessionId: string) {
  * Call this after any action that confirms someone into a session
  * (self RSVP, admin/manager adding a member or guest). Checks whether
  * the confirmed count just crossed 10, 5, or 2 spots remaining, and
- * if so notifies approved members who aren't already in that session.
- * Each threshold only ever fires once per session.
+ * if so notifies approved members who aren't already in that session
+ * and haven't opted out. Each threshold only ever fires once per session.
  */
 export async function checkSpotsThresholds(sessionId: string) {
   try {
@@ -81,7 +83,8 @@ export async function checkSpotsThresholds(sessionId: string) {
       .from("players")
       .select("id")
       .eq("status", "approved")
-      .eq("is_guest", false);
+      .eq("is_guest", false)
+      .eq("notify_spots_remaining", true);
     const targetIds = (members ?? []).map((p) => p.id).filter((id) => !alreadyInIds.has(id));
 
     const lowestCrossed = Math.min(...toNotify);
@@ -119,7 +122,15 @@ export async function notifyFixturesReady(sessionId: string) {
       .eq("source", "fixture");
     if (!matches || matches.length === 0) return;
 
-    const playerIds = [...new Set(matches.flatMap((m) => [...m.team_a, ...m.team_b]))];
+    const participantIds = [...new Set(matches.flatMap((m) => [...m.team_a, ...m.team_b]))];
+    if (participantIds.length === 0) return;
+
+    const { data: optedIn } = await admin
+      .from("players")
+      .select("id")
+      .in("id", participantIds)
+      .eq("notify_fixtures_ready", true);
+    const playerIds = (optedIn ?? []).map((p) => p.id);
 
     await sendPushToPlayerIds(playerIds, {
       title: "Your fixtures are ready",

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { notifyPostPendingApproval } from "@/lib/notifications/club-triggers";
 
 export type FeedFormState = { error?: string; success?: boolean };
 
@@ -50,6 +51,11 @@ async function insertFeedPost(formData: FormData) {
   });
 
   if (error) return { error: error.message } as const;
+
+  if (!isAdmin) {
+    await notifyPostPendingApproval();
+  }
+
   return { success: true } as const;
 }
 
