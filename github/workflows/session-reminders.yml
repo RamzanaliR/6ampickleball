@@ -1,0 +1,15 @@
+name: Session reminder notifications
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch: {}
+
+jobs:
+  ping-reminder-endpoint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call session-reminders endpoint
+        run: |
+          curl -sf -X GET "https://6ampickleball.vercel.app/api/cron/session-reminders" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
