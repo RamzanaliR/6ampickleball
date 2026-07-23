@@ -5,6 +5,7 @@ import { PageHeader } from "@/components/page-header";
 import { EmptyState } from "@/components/empty-state";
 import { ProfileOverview } from "@/components/profile-overview";
 import { NotificationSettings } from "@/components/notification-settings";
+import { NotificationPromptModal } from "@/components/notification-prompt-modal";
 import { MatchHistoryList } from "@/components/match-history-list";
 import { formatSessionDate, formatSessionTime, formatTZS, displayName } from "@/lib/format";
 import type { MatchSet } from "@/lib/types";
@@ -84,6 +85,7 @@ export default async function DashboardPage() {
 
   return (
     <div>
+      <NotificationPromptModal />
       <PageHeader
         eyebrow="Your dashboard"
         title={`Hey, ${(player ? displayName(player) : "").split(" ")[0] || "there"}`}
