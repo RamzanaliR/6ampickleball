@@ -1,0 +1,20 @@
+name: Session reminder notifications
+
+# Vercel's Hobby (free) plan only allows cron jobs that run once a day,
+# which isn't enough for 24h/12h/6h session reminders. GitHub Actions
+# has no such limit on public repos, so we use it to hit the same
+# endpoint instead — the endpoint itself (app/api/cron/session-reminders)
+# is unchanged either way.
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch: {} # lets you manually trigger a run from the Actions tab, for testing
+
+jobs:
+  ping-reminder-endpoint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call session-reminders endpoint
+        run: |
+          curl -sf -X GET "https://6ampickleball.vercel.app/api/cron/session-reminders" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
