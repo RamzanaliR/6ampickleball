@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import { SessionQuickActions } from "@/components/admin/session-quick-actions";
 import { SessionDeleteButton } from "@/components/admin/session-delete-button";
+import { TestReminderButton } from "@/components/admin/test-reminder-button";
 import { bulkDeleteSessions, bulkSetSessionStatus } from "@/lib/actions/admin-sessions";
 import { formatSessionDate, formatSessionTime } from "@/lib/format";
 
@@ -152,6 +153,7 @@ export function SessionsBoard({
                   </Link>
                   {isAdmin && (
                     <div className="flex items-center gap-3">
+                      <TestReminderButton sessionId={s.id} />
                       <SessionQuickActions sessionId={s.id} status={s.status} />
                       <SessionDeleteButton sessionId={s.id} />
                     </div>

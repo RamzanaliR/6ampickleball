@@ -142,3 +142,53 @@ export async function sendTestPush(): Promise<PushActionState & { sent?: number 
   }
   return { success: true, sent: result.sent };
 }
+
+/**
+ * Admin-only: sends a reminder-style push to everyone confirmed for a
+ * session right now, regardless of how far away it actually is. Lets
+ * you verify the reminder trigger works without waiting for an actual
+ * 24h/12h/6h window to arrive. Does not touch the reminder_*_sent
+ * flags, so it never interferes with the real scheduled reminders.
+ */
+export async function sendTestReminder(sessionId: string): Promise<PushActionState & { sent?: number }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  const { data: me } = await supabase.from("players").select("role").eq("id", user.id).single();
+  if (me?.role !== "admin") return { error: "Admins only" };
+
+  if (!vapidConfigured) {
+    return { error: "Push isn't configured yet — VAPID keys are missing on the server." };
+  }
+
+  const admin = createAdminClient();
+  const { data: session } = await admin
+    .from("sessions")
+    .select("title, date_time, location")
+    .eq("id", sessionId)
+    .single();
+  if (!session) return { error: "Session not found." };
+
+  const { data: rsvps } = await admin
+    .from("rsvps")
+    .select("player_id")
+    .eq("session_id", sessionId)
+    .eq("status", "confirmed");
+  const playerIds = (rsvps ?? []).map((r) => r.player_id);
+  if (playerIds.length === 0) return { error: "Nobody is confirmed for this session yet." };
+
+  const result = await sendPushToPlayerIds(playerIds, {
+    title: "Test: Session reminder",
+    body: `${session.title} — ${session.location}. (This is a manual test, not a real countdown.)`,
+    url: `/sessions/${sessionId}`,
+    tag: `test-reminder-${sessionId}`,
+  });
+
+  if (result.sent === 0) {
+    return { error: "Nobody confirmed has notifications enabled yet." };
+  }
+  return { success: true, sent: result.sent };
+}
