@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "@fontsource-variable/inter/wght.css";
 import "@fontsource-variable/jetbrains-mono/wght.css";
 import "@fontsource-variable/big-shoulders-display/wght.css";
@@ -8,6 +8,16 @@ import { Nav } from "@/components/nav";
 export const metadata: Metadata = {
   title: "6AM Pickleball Club",
   description: "Sessions, standings, and results for the community.",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "6AM Pickleball",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#1f6f5c",
 };
 
 export default function RootLayout({

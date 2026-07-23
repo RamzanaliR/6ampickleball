@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/page-header";
 import { EmptyState } from "@/components/empty-state";
 import { ProfileOverview } from "@/components/profile-overview";
+import { NotificationSettings } from "@/components/notification-settings";
 import { MatchHistoryList } from "@/components/match-history-list";
 import { formatSessionDate, formatSessionTime, formatTZS, displayName } from "@/lib/format";
 import type { MatchSet } from "@/lib/types";
@@ -149,6 +150,9 @@ export default async function DashboardPage() {
                 phone={player?.phone ?? null}
                 duprId={player?.dupr_id ?? null}
               />
+              <div className="kitchen-line mt-5 pt-5">
+                <NotificationSettings />
+              </div>
             </div>
           </section>
 
